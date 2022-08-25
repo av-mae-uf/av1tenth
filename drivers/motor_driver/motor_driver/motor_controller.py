@@ -24,7 +24,23 @@ WHEELBASE = 313e-3  # Wheelbase of the Injora SCX10 II Chassis
 MAX_LINEAR_SPEED = 585*(2*pi*120e-3)/60  # m/s
 R2D = 180/pi
 GEAR_RATIO = 38/15  # Gear ratio of gearbox output shaft to wheels
-PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00384230-if00"
+
+#####################################################################################################################
+# You will need to uncomment the appropriate line for your cars to ensure you can communicate with the controller
+
+# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00384230-if00" # CraneAV
+# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387246-if00" # GaitherAV
+# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387242-if00" # SerigAV
+# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387277-if00" # PetersonAV
+# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387254-if00" # RoanAV
+# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387281-if00" # WattsAV
+# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387259-if00" # TlustyAV
+# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387264-if00" # MatthewAV
+# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387278-if00" # SniderAV
+# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387270-if00" # SandorAV
+# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387238-if00" # DuffyAV
+
+######################################################################################################################
 
 
 class serial_cmds:
