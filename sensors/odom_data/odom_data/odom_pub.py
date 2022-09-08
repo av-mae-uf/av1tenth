@@ -79,7 +79,7 @@ class OdomPub(Node):
         mag_z = 0.0
 
         msg = Odometry()
-        linear_speed = self.serial_encoder.serial_readline()
+        linear_speed = float(self.serial_encoder.serial_readline())
         count = 0
 
         while self.serial_imu.serial_in_waiting():
