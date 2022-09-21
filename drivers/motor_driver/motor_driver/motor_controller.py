@@ -128,6 +128,9 @@ class MotorController(Node):
         self.linear = float(msg.linear.x)  # m/s, +ve for fwd, -ve for rev
         self.angular = float(msg.angular.z)  # rad/s, +ve for CCW rotation
 
+        if self.linear > 2:
+            self.linear = 1.9
+
         # The neutral point PWM period for both the servo and the brushed motor is about 1500 us. The Maestro Servo Controller requires values
         # in quarter-microseconds,i.e. microseconds*4. The new neutral point will now be 1500*4 = 6000 quarter-microseconds.
 
