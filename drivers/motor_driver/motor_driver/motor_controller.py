@@ -15,32 +15,19 @@ from math import pi, atan
 from rclpy.node import Node
 from std_msgs.msg import Int16
 from geometry_msgs.msg import Twist
+from .ports import ports
 
 import rclpy
 import serial
-
+import os
 
 WHEELBASE = 313e-3  # Wheelbase of the Injora SCX10 II Chassis
 MAX_LINEAR_SPEED = 585*(2*pi*120e-3)/60  # m/s
 R2D = 180/pi
 GEAR_RATIO = 38/15  # Gear ratio of gearbox output shaft to wheels
 
-#####################################################################################################################
-# You will need to uncomment the appropriate line for your cars to ensure you can communicate with the controller
-
-# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00384230-if00" # CraneAV
-# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387246-if00" # GaitherAV
-# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387242-if00" # SerigAV
-# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387277-if00" # PetersonAV
-# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387254-if00" # RoanAV
-# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387281-if00" # WattsAV
-# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387259-if00" # TlustyAV
-# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387264-if00" # MatthewAV
-# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387278-if00" # SniderAV
-# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387270-if00" # SandorAV
-# PORT = "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387238-if00" # DuffyAV
-
-######################################################################################################################
+USER = os.environ.get('USER')
+PORT = ports[USER]
 
 
 class serial_cmds:
@@ -105,6 +92,9 @@ class MotorController(Node):
         self.subscription  # prevent unused variable warning
         self.sub2 = self.create_subscription(
             Int16, 'led_color', self.led_cllbk, 20)
+        self.declare_parameter('steering_offset', 0)
+        self.str_offset = self.get_parameter(
+            'steering_offset').get_parameter_value().double_value
         self.sub2
         self.cmd_send
         self.lastmsg = 0
@@ -151,26 +141,27 @@ class MotorController(Node):
             if rad_curv < 1e-2 and rad_curv > -1e-2:
                 rad_curv = 1e-10
 
-        steer_angle = atan(WHEELBASE/float(rad_curv))*R2D  # degrees
+        steer_angle = atan(WHEELBASE/float(rad_curv)) * \
+                           R2D + self.str_offset  # degrees
 
         # 3000/45 is the ratio to move our points between 3000 and 9000 quarter-us.
         # This ratio, when a steering angle is mutplied with it, will give us a usable value in quarter-microseconds.
         ratio_steering = 3000/45
 
         # Here, the neutral point is 6000, subtracting steering angle
-        steering_target = round(6000 - steer_angle*ratio_steering)
+        steering_target = round((6000 - steer_angle*ratio_steering)
 
         # Setting the channel number for the board where we have plugged in our servo or drive motor respectiveley.
-        steering_chan = 0
-        drive_chan = 1
+        steering_chan=0
+        drive_chan=1
 
         # The following commands are setting the speed and acceleration of the servo/drive. Can be changed to be slower.
         # Speed is generally based on the PWM signal and how many microseconds you wish to take to get to the target.
         # Acceleration
-        speed_steering = 0
-        speed_drive = 0
-        acc_steering = 0
-        acc_drive = 0
+        speed_steering=0
+        speed_drive=0
+        acc_steering=0
+        acc_drive=0
 
         self.serial_.set_speed(steering_chan, speed_steering)
         self.serial_.set_speed(drive_chan, speed_drive)
@@ -192,7 +183,7 @@ class MotorController(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    motor_controller = MotorController()
+    motor_controller=MotorController()
     try:
         rclpy.spin(motor_controller)
 
