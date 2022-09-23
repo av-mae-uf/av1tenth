@@ -1,5 +1,5 @@
 ports = {
-    "cimarav": "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00384230-if00",  # LabAV
+    "cimarAV": "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00384230-if00",  # LabAV
     "cimar": "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00384236-if00",  # CraneAV
     "gaither": "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387246-if00",  # GaitherAV
     "peterson": "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387277-if00",  # PetersonAV
