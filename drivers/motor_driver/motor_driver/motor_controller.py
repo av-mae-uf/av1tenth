@@ -93,19 +93,30 @@ class MotorController(Node):
         self.declare_parameter('steering_offset', 0)
         self.str_offset = self.get_parameter(
             'steering_offset').get_parameter_value().double_value
-        self.lastmsg = 0
-        self.last_num = 0
+        self.declare_parameter('limiter', True)
+        self.limiter = self.get_parameter(
+            'limiter').get_parameter_value.bool_value
+        self.linear = 0
+        self.angular = 0
 
     def led_cllbk(self, Int16):
 
         msg = Int16.data
         if msg == 2:
             self.serial_.set_target(3, 3000)  # Green LED
+            self.serial_.set_target(4, 3000)  # Red LED
             self.serial_.set_target(5, 6000)  # Yellow LED
 
         elif msg == 1:
             self.serial_.set_target(4, 6000)  # Red LED
             self.serial_.set_target(3, 3000)
+            self.serial_.set_target(5, 3000)  # Yellow LED
+
+        elif msg == 0:
+
+            self.serial_.set_target(4, 3000)  # Red LED
+            self.serial_.set_target(3, 3000)
+            self.serial_.set_target(5, 3000)
 
     def cmd_send(self, Twist):
 
@@ -114,8 +125,9 @@ class MotorController(Node):
         self.linear = float(msg.linear.x)  # m/s, +ve for fwd, -ve for rev
         self.angular = float(msg.angular.z)  # rad/s, +ve for CCW rotation
 
-        self.linear = min(self.linear, 2)
-        self.linear = max(self.linear, -2)
+        if self.limiter is True:
+            self.linear = min(self.linear, 2)
+            self.linear = max(self.linear, -2)
 
         # The neutral point PWM period for both the servo and the brushed motor is about 1500 us. The Maestro Servo Controller requires values
         # in quarter-microseconds,i.e. microseconds*4. The new neutral point will now be 1500*4 = 6000 quarter-microseconds.
@@ -141,13 +153,13 @@ class MotorController(Node):
             R2D + self.str_offset  # degrees
 
         # 3000/45 is the ratio to move our points between 3000 and 9000 quarter-us.
-        # This ratio, when a steering angle is mutplied with it, will give us a usable value in quarter-microseconds.
+        # This ratio, when a steering angle is multiplied with it, will give us a usable value in quarter-microseconds.
         ratio_steering = 3000/45
 
         # Here, the neutral point is 6000, subtracting steering angle
         steering_target = round(6000 - steer_angle*ratio_steering)
 
-        # Setting the channel number for the board where we have plugged in our servo or drive motor respectiveley.
+        # Setting the channel number for the board where we have plugged in our servo or drive motor respectively.
         steering_chan = 0
         drive_chan = 1
 
@@ -191,7 +203,7 @@ def main(args=None):
         serial_cmds(PORT).set_target(4, 3000)
         serial_cmds(PORT).set_target(3, 6500)
         serial_cmds(PORT).set_target(5, 3000)
-        motor_controller.get_logger().warn(f"The motor driver node is now off")
+        motor_controller.get_logger().warn("The motor driver node is now off")
     finally:
         motor_controller.destroy_node()
         rclpy.shutdown()
