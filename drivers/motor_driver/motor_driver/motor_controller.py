@@ -118,8 +118,8 @@ class MotorController(Node):
         self.linear = float(msg.linear.x)  # m/s, +ve for fwd, -ve for rev
         self.angular = float(msg.angular.z)  # rad/s, +ve for CCW rotation
 
-        if self.linear > 2:
-            self.linear = 1.9
+        self.linear = min(self.linear, 2)
+        self.linear = max(self.linear, -2)
 
         # The neutral point PWM period for both the servo and the brushed motor is about 1500 us. The Maestro Servo Controller requires values
         # in quarter-microseconds,i.e. microseconds*4. The new neutral point will now be 1500*4 = 6000 quarter-microseconds.
@@ -142,26 +142,26 @@ class MotorController(Node):
                 rad_curv = 1e-10
 
         steer_angle = atan(WHEELBASE/float(rad_curv)) * \
-                           R2D + self.str_offset  # degrees
+            R2D + self.str_offset  # degrees
 
         # 3000/45 is the ratio to move our points between 3000 and 9000 quarter-us.
         # This ratio, when a steering angle is mutplied with it, will give us a usable value in quarter-microseconds.
         ratio_steering = 3000/45
 
         # Here, the neutral point is 6000, subtracting steering angle
-        steering_target = round((6000 - steer_angle*ratio_steering)
+        steering_target = round(6000 - steer_angle*ratio_steering)
 
         # Setting the channel number for the board where we have plugged in our servo or drive motor respectiveley.
-        steering_chan=0
-        drive_chan=1
+        steering_chan = 0
+        drive_chan = 1
 
         # The following commands are setting the speed and acceleration of the servo/drive. Can be changed to be slower.
         # Speed is generally based on the PWM signal and how many microseconds you wish to take to get to the target.
         # Acceleration
-        speed_steering=0
-        speed_drive=0
-        acc_steering=0
-        acc_drive=0
+        speed_steering = 0
+        speed_drive = 0
+        acc_steering = 0
+        acc_drive = 0
 
         self.serial_.set_speed(steering_chan, speed_steering)
         self.serial_.set_speed(drive_chan, speed_drive)
@@ -183,7 +183,7 @@ class MotorController(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    motor_controller=MotorController()
+    motor_controller = MotorController()
     try:
         rclpy.spin(motor_controller)
 
