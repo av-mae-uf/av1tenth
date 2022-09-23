@@ -10,7 +10,6 @@
 # Polulu code was written from a combination of https://github.com/FRC4564/Maestro/blob/master/maestro.py
 # and Pololu Maestro Documentation
 
-import time
 from math import pi, atan
 from rclpy.node import Node
 from std_msgs.msg import Int16
@@ -89,14 +88,11 @@ class MotorController(Node):
         self.serial_.set_target(3, 3000)
         self.subscription = self.create_subscription(
             Twist, 'vehicle_command', self.cmd_send, 20)
-        self.subscription  # prevent unused variable warning
         self.sub2 = self.create_subscription(
             Int16, 'led_color', self.led_cllbk, 20)
         self.declare_parameter('steering_offset', 0)
         self.str_offset = self.get_parameter(
             'steering_offset').get_parameter_value().double_value
-        self.sub2
-        self.cmd_send
         self.lastmsg = 0
         self.last_num = 0
 
@@ -195,6 +191,7 @@ def main(args=None):
         serial_cmds(PORT).set_target(4, 3000)
         serial_cmds(PORT).set_target(3, 6500)
         serial_cmds(PORT).set_target(5, 3000)
+        motor_controller.get_logger().warn(f"The motor driver node is now off")
     finally:
         motor_controller.destroy_node()
         rclpy.shutdown()

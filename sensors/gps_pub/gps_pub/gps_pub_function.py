@@ -6,8 +6,6 @@
 
 import rclpy
 import time
-import busio
-import sys
 import adafruit_gps
 import serial
 import utm
