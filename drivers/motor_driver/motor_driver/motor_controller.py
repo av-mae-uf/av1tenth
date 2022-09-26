@@ -94,8 +94,7 @@ class MotorController(Node):
         self.str_offset = self.get_parameter(
             'steering_offset').get_parameter_value().double_value
         self.declare_parameter('limiter', True)
-        self.limiter = self.get_parameter(
-            'limiter').get_parameter_value.bool_value
+        self.limiter = True
         self.linear = 0
         self.angular = 0
 
