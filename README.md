@@ -47,7 +47,13 @@ The `gps_publisher` package requires the `utm` python package which can be insta
 ```
 python3 -m pip install utm
 ```
+and
+
+```
+python3 -m pip install adafruit-circuitpython-gps
+```
 If it throws and error while trying to install with pip, install pip:
 ```
 sudo apt install python3-pip
 ```
+
