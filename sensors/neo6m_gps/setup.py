@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = "motor_driver"
+package_name = "neo6m_gps"
 
 setup(
     name=package_name,
@@ -12,14 +12,12 @@ setup(
     ],
     install_requires=["setuptools"],
     zip_safe=True,
-    maintainer="aditya",
-    maintainer_email="apenumarti@ufl.edu",
-    description="This package runs the actuators on the vehicle. It uses the Pololu Micro Maestro servo controller to accomplish this.",
+    maintainer="Carl Crane",
+    maintainer_email="carl.crane@gmail.com, neap@ufl.edu, apenumarti@ufl.edu",
+    description="Package for publishing GPS data from a NEO-6M GPS unit. Can be used for navigation, designed for autonomous route point navigation",
     license="MIT",
     tests_require=["pytest"],
     entry_points={
-        "console_scripts": [
-            "motor_controller = motor_driver.motor_controller:main",
-        ],
+        "console_scripts": ["driver = neo6m_gps.neo6m_driver_node:main"],
     },
 )

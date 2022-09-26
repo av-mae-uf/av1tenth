@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>gps_pub</name>
+  <name>neo6m_gps</name>
   <version>1.0.0</version>
   <description>A package that publishes data from the NEO-6M GPS module</description>
   <maintainer email="carl.crane@gmail.com">Carl Crane</maintainer>
-  <license>N/A</license>
+  <license>MIT</license>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
