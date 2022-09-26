@@ -1,4 +1,4 @@
-# CIMAR Autonomous 1/10th Cars Drivers and Sensor Publisher
+# EML4930: Autonomous Vehicles 1/10th Car Driver and Sensor Base Code
 Autonomous Vehicles package for testing and creating nodes for preperation for GPS and LIDAR based autonomous navigation
 ### Installation
 
