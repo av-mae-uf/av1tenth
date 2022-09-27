@@ -5,7 +5,7 @@
   <version>1.0.0</version>
   <description>A lidar launch file</description>
   <maintainer email="apenumarti@ufl.edu">aditya</maintainer>
-  <license>N/A</license>
+  <license>MIT</license>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

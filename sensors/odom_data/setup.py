@@ -15,7 +15,7 @@ setup(
     maintainer="Aditya Penumarti",
     maintainer_email="apenumarti@ufl.edu",
     description="Package for publishing IMU Data, which includes, angle off true north, angular acceleration and velocity, etc.",
-    license="N/A",
+    license="MIT",
     tests_require=["pytest"],
     entry_points={
         "console_scripts": ["publisher = odom_data.publisher_node:main"],

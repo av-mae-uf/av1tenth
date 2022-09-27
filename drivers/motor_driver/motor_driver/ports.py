@@ -10,5 +10,4 @@ ports = {
     "snider": "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387278-if00",  # SniderAV
     "sandor": "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387270-if00",  # SandorAV
     "duffy": "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_Micro_Maestro_6-Servo_Controller_00387238-if00",  # DuffyAV
-
 }

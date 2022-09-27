@@ -76,12 +76,15 @@ class OdomPub(Node):
         mag_y = 0.0
         mag_z = 0.0
 
+        flag = False
+
         msg = Odometry()
         linear_speed = float(self.serial_encoder.serial_readline())
 
         count = 0
 
         while self.serial_imu.serial_in_waiting():
+            flag = True
             byte = self.serial_imu.serial_read()
             if byte == "55":
                 outputs = self.serial_imu.serial_read()
@@ -101,9 +104,9 @@ class OdomPub(Node):
                     for x in range(9):
                         val = self.serial_imu.serial_read()
                         ang_vel_output.append(int(val, base=16))
-                    ydot = (ang_vel_output[1] << 8 | ang_vel_output[0]) / 32768 * 2000
-                    xdot = (ang_vel_output[3] << 8 | ang_vel_output[2]) / 32768 * 2000
-                    zdot = (ang_vel_output[5] << 8 | ang_vel_output[4]) / 32768 * 2000
+                    pitch_rate = (ang_vel_output[1] << 8 | ang_vel_output[0]) / 32768 * 2000
+                    roll_rate = (ang_vel_output[3] << 8 | ang_vel_output[2]) / 32768 * 2000
+                    yaw_rate = (ang_vel_output[5] << 8 | ang_vel_output[4]) / 32768 * 2000
                 elif outputs == "53" and count > 1:
                     angle_output = []
                     for x in range(9):
@@ -112,14 +115,6 @@ class OdomPub(Node):
                     y_angle = (angle_output[1] << 8 | angle_output[0]) / 32768 * 180
                     x_angle = (angle_output[3] << 8 | angle_output[2]) / 32768 * 180
                     z_angle = (angle_output[5] << 8 | angle_output[4]) / 32768 * 180
-                elif outputs == "54" and count > 1:
-                    mag_output = []
-                    for x in range(9):
-                        val = self.serial_imu.serial_read()
-                        mag_output.append(int(val, base=16))
-                    mag_y = (mag_output[1] << 8) | mag_output[0]
-                    mag_x = (mag_output[3] << 8) | mag_output[2]
-                    mag_z = (angle_output[5] << 8) | mag_output[4]
 
         c_z = cos((z_angle * D2R) / 2)
         s_z = sin((z_angle * D2R) / 2)
@@ -132,9 +127,9 @@ class OdomPub(Node):
         msg.pose.pose.orientation.y = c_x * s_y * c_z + s_x * c_y * s_z
         msg.pose.pose.orientation.z = c_x * c_y * s_z - s_x * s_y * c_z
         msg.twist.twist.linear.x = linear_speed
-        msg.twist.twist.angular.x = xdot
-        msg.twist.twist.angular.y = ydot
-        msg.twist.twist.angular.z = zdot
+        msg.twist.twist.angular.x = pitch_rate
+        msg.twist.twist.angular.y = roll_rate
+        msg.twist.twist.angular.z = yaw_rate
 
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = "odom"
@@ -149,8 +144,8 @@ class OdomPub(Node):
         #     )
         # )
         self.get_logger().info(f"yaw angle from set point {z_angle}")
-
-        self.publisher.publish(msg)
+        if flag is True:
+            self.publisher.publish(msg)
 
 
 def main(args=None):
