@@ -19,6 +19,7 @@ from rclpy.node import Node
 from std_msgs.msg import Int16
 from geometry_msgs.msg import Twist
 from .ports import ports
+from drive_interfaces.msg import VehCmd
 
 
 WHEELBASE = 313e-3  # Wheelbase of the Injora SCX10 II Chassis
@@ -34,7 +35,7 @@ class SerialCmds:
     def __init__(self, port):
         # Change according to what serial port you connected the Maestro to
         self.serial_port = port
-        self.serial_usb = serial.Serial(self.serial_port)  # Opening the serial port
+        self.serial_usb = serial.Serial(self.serial_port, 115200)  # Opening the serial port
         # Setting the command variable to Pololu Protocol. First command is just an arbitrary starting byte.
         self.pol_prot_cmd = chr(0xAA) + chr(0x0C)
         # Second number is device number, default is 12
@@ -96,9 +97,14 @@ class MotorController(Node):
 
         self.pololu = SerialCmds(PORT)
         self.pololu.set_target(3, 3000)
-        self.subscription = self.create_subscription(Twist, "vehicle_command", self.cmd_send, 20)
-        self.sub2 = self.create_subscription(Int16, "led_color", self.led_cllbk, 20)
-        self.declare_parameter("steering_offset", 0)
+        self.subscription = self.create_subscription(
+            Twist, "vehicle_command_twist", self.twist_send, 20
+        )
+        self.lights = self.create_subscription(Int16, "led_color", self.led_cllbk, 20)
+        self.steering_angle_sub = self.create_subscription(
+            VehCmd, "vehicle_command_angle", self.steering_angle_send, 20
+        )
+        self.declare_parameter("steering_offset", 0.0)
         self.str_offset = self.get_parameter("steering_offset").get_parameter_value().double_value
         self.declare_parameter("limiter", True)
         self.limiter = self.get_parameter("limiter").get_parameter_value().bool_value
@@ -107,7 +113,9 @@ class MotorController(Node):
         self.get_logger().info("Motor Controller Node Running")
 
     def led_cllbk(self, msg: Int16):
-
+        """
+        This callback sets the led colors on your car, based on the subscription to the topic led_color.
+        """
         if msg.data == 0:
             self.pololu.set_lights("off")
 
@@ -117,7 +125,7 @@ class MotorController(Node):
         elif msg.data == 2:
             self.pololu.set_lights("yellow")
 
-    def cmd_send(self, msg: Twist):
+    def twist_send(self, msg: Twist):
         """
         The neutral point PWM period for both the servo and the brushed motor is about 1500 us. The Maestro Servo Controller requires values
         in quarter-microseconds,i.e. microseconds*4. The new neutral point will now be 1500*4 = 6000 quarter-microseconds.
@@ -125,52 +133,97 @@ class MotorController(Node):
         The range of PWM signals for the steering servo is between 750 and 2500 microseconds, which corresponds to 3000 and 9000
         quarter-microseconds."""
 
-        self.linear_vel = msg.linear.x  # m/s, +ve for fwd, -ve for rev
-        self.angular_vel = msg.angular.z  # rad/s, +ve for CCW rotation
-
-        if self.limiter is True:
-            self.linear_vel = min(self.linear_vel, 2)
-            self.linear_vel = max(self.linear_vel, -2)
-
-        # Multiplying by 3000 to get a value between -3000 and 3000, that will be added or subtracted later from the neutral point
-        ratio_throttle = (self.linear_vel / MAX_LINEAR_SPEED) * 3000
-
-        # 6000 is the neutral point, here essentially adding or subtracting the ratio throttle to go forward and reverse.
-        throttle_effort = round(6000 + ratio_throttle)
-
-        # The steering angle will be given between -45 and 45 degrees, with the neutral point as 0 degrees
-        if -1e-2 < self.angular_vel < 1e-2:
-            rad_curv = float(1e17)
+        if not msg:
+            pass
         else:
-            rad_curv = self.linear_vel / self.angular_vel
-            if -1e-2 < rad_curv < 1e-2:
-                rad_curv = 1e-10
+            self.linear_vel = msg.linear.x  # m/s, +ve for fwd, -ve for rev
+            self.angular_vel = msg.angular.z  # rad/s, +ve for CCW rotation
 
-        steer_angle = atan(WHEELBASE / float(rad_curv)) * R2D + self.str_offset  # degrees
+            if self.limiter is True:
+                self.linear_vel = min(self.linear_vel, 2)
+                self.linear_vel = max(self.linear_vel, -2)
 
-        # 3000/45 is the ratio to move our points between 3000 and 9000 quarter-us.
-        # This ratio, when a steering angle is multiplied with it, will give us a usable value in quarter-microseconds.
-        ratio_steering = 3000 / 45
+            # Multiplying by 3000 to get a value between -3000 and 3000, that will be added or subtracted later from the neutral point
+            ratio_throttle = (self.linear_vel / MAX_LINEAR_SPEED) * 3000
 
-        # Here, the neutral point is 6000, subtracting steering angle
-        steering_target = round(6000 - steer_angle * ratio_steering)
+            # 6000 is the neutral point, here essentially adding or subtracting the ratio throttle to go forward and reverse.
+            throttle_effort = round(6000 + ratio_throttle)
 
-        # Setting the channel number for the board where we have plugged in our servo or drive motor respectively.
-        steering_channel = 0
-        drive_channel = 1
+            # The steering angle will be given between -45 and 45 degrees, with the neutral point as 0 degrees
+            if -1e-2 < self.angular_vel < 1e-2:
+                rad_curv = float(1e17)
+            else:
+                rad_curv = self.linear_vel / self.angular_vel
+                if -1e-2 < rad_curv < 1e-2:
+                    rad_curv = 1e-10
 
-        # The following commands are setting the speed and acceleration of the servo/drive. Can be changed to be slower.
-        # Speed is generally based on the PWM signal and how many microseconds you wish to take to get to the target.
-        # Acceleration
+            steer_angle = atan(WHEELBASE / float(rad_curv)) * R2D + self.str_offset  # degrees
 
-        self.pololu.set_speed(channel=steering_channel, speed=0)
-        self.pololu.set_speed(channel=drive_channel, speed=0)
-        self.pololu.set_acc(channel=steering_channel, acc=0)
-        self.pololu.set_acc(channel=drive_channel, acc=0)
+            # 3000/45 is the ratio to move our points between 3000 and 9000 quarter-us.
+            # This ratio, when a steering angle is multiplied with it, will give us a usable value in quarter-microseconds.
+            ratio_steering = 3000 / 45
 
-        # The following commands are sending the controller the targets of our throttle and steering command
-        self.pololu.set_target(channel=drive_channel, target=throttle_effort)
-        self.pololu.set_target(channel=steering_channel, target=steering_target)
+            # Here, the neutral point is 6000, subtracting steering angle
+            steering_target = round(6000 - steer_angle * ratio_steering)
+
+            # Setting the channel number for the board where we have plugged in our servo or drive motor respectively.
+            steering_channel = 0
+            drive_channel = 1
+
+            # The following commands are setting the speed and acceleration of the servo/drive. Can be changed to be slower.
+            # Speed is generally based on the PWM signal and how many microseconds you wish to take to get to the target.
+            # Acceleration
+
+            self.pololu.set_speed(channel=steering_channel, speed=0)
+            self.pololu.set_speed(channel=drive_channel, speed=0)
+            self.pololu.set_acc(channel=steering_channel, acc=0)
+            self.pololu.set_acc(channel=drive_channel, acc=0)
+
+            # The following commands are sending the controller the targets of our throttle and steering command
+            self.pololu.set_target(channel=drive_channel, target=throttle_effort)
+            self.pololu.set_target(channel=steering_channel, target=steering_target)
+
+    def steering_angle_send(self, msg: VehCmd):
+        if not msg:
+            pass
+        else:
+            self.throttle_effort_percentage = msg.throttle_effort  # m/s, +ve for fwd, -ve for rev
+            self.steering_angle = msg.steering_angle  # rad, +ve for CCW rotation
+
+            if self.limiter is True:
+                self.throttle_effort_percentage = min(self.throttle_effort_percentage, 25.0)
+                self.throttle_effort_percentage = max(self.throttle_effort_percentage, -25.0)
+
+            # Multiplying by 3000 to get a value between -3000 and 3000, that will be added or subtracted later from the neutral point
+            ratio_throttle = (self.throttle_effort_percentage / 100) * 3000
+
+            # 6000 is the neutral point, here essentially adding or subtracting the ratio throttle to go forward and reverse.
+            throttle_effort = round(6000 + ratio_throttle)
+
+            # The steering angle will be given between -45 and 45 degrees, with the neutral point as 0 degree.
+            # 3000/45 is the ratio to move our points between 3000 and 9000 quarter-us.
+            # This ratio, when a steering angle is multiplied with it, will give us a usable value in quarter-microseconds.
+            ratio_steering = 3000 / 45
+
+            # Here, the neutral point is 6000, subtracting steering angle
+            steering_target = round(6000 - self.steering_angle * ratio_steering)
+
+            # Setting the channel number for the board where we have plugged in our servo or drive motor respectively.
+            steering_channel = 0
+            drive_channel = 1
+
+            # The following commands are setting the speed and acceleration of the servo/drive. Can be changed to be slower.
+            # Speed is generally based on the PWM signal and how many microseconds you wish to take to get to the target.
+            # Acceleration
+
+            self.pololu.set_speed(channel=steering_channel, speed=0)
+            self.pololu.set_speed(channel=drive_channel, speed=0)
+            self.pololu.set_acc(channel=steering_channel, acc=0)
+            self.pololu.set_acc(channel=drive_channel, acc=0)
+
+            # The following commands are sending the controller the targets of our throttle and steering command
+            self.pololu.set_target(channel=drive_channel, target=throttle_effort)
+            self.pololu.set_target(channel=steering_channel, target=steering_target)
 
 
 def main(args=None):

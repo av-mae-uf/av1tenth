@@ -52,8 +52,8 @@ class OdomPub(Node):
         super().__init__("odom_pub")
         self.serial_imu = OdomSerial("/dev/sensor/imu")
         self.serial_encoder = OdomSerial("/dev/sensor/encoder")
-        self.publisher = self.create_publisher(Odometry, "veh_odom", 10)
-        self.timer = self.create_timer(timer_period_sec=0.1, callback=self.odom_callback)
+        self.publisher = self.create_publisher(Odometry, "odometry", 10)
+        self.timer = self.create_timer(timer_period_sec=0.15, callback=self.odom_callback)
         self.declare_parameter("9_axis_mode", False)
         axis_mode = self.get_parameter("9_axis_mode").get_parameter_value().bool_value
         if axis_mode is True:
@@ -79,8 +79,8 @@ class OdomPub(Node):
         flag = False
 
         msg = Odometry()
-        linear_speed = float(self.serial_encoder.serial_readline())
-
+        linear_speed = float(self.serial_encoder.serial_readline()) * (2 * pi * 120e-3) / 60
+        self.get_logger().info(f"Linear Speed: {linear_speed}")
         count = 0
 
         while self.serial_imu.serial_in_waiting():
@@ -134,15 +134,6 @@ class OdomPub(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = "odom"
         msg.child_frame_id = "chassis"
-        # self.get_logger().info(
-        #     "Quaternion w: %4.2f \n Quaternion x: %4.2f \n Quaternion y: %4.2f \n Quaternion z: %4.2f"
-        #     % (
-        #         msg.pose.pose.orientation.w,
-        #         msg.pose.pose.orientation.x,
-        #         msg.pose.pose.orientation.y,
-        #         msg.pose.pose.orientation.z,
-        #     )
-        # )
         self.get_logger().info(f"yaw angle from set point {z_angle}")
         if flag is True:
             self.publisher.publish(msg)
