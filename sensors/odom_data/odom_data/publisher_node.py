@@ -56,6 +56,8 @@ class OdomPub(Node):
         self.timer = self.create_timer(timer_period_sec=0.15, callback=self.odom_callback)
         self.declare_parameter("9_axis_mode", False)
         axis_mode = self.get_parameter("9_axis_mode").get_parameter_value().bool_value
+        self.declare_parameter("z_angle_offset",0.0)
+        self.z_offset = self.get_parameter("z_angle_offset").get_parameter_value().float_value
         if axis_mode is True:
             self.serial_imu.nine_axis()
         else:
@@ -71,7 +73,7 @@ class OdomPub(Node):
         z_acc = 0.0
         y_angle = 0.0
         x_angle = 0.0
-        z_angle = 0.0
+        z_angle = 0.0 
         mag_x = 0.0
         mag_y = 0.0
         mag_z = 0.0
@@ -115,7 +117,7 @@ class OdomPub(Node):
                     y_angle = (angle_output[1] << 8 | angle_output[0]) / 32768 * 180
                     x_angle = (angle_output[3] << 8 | angle_output[2]) / 32768 * 180
                     z_angle = (angle_output[5] << 8 | angle_output[4]) / 32768 * 180
-
+        z_angle += self.z_offset
         c_z = cos((z_angle * D2R) / 2)
         s_z = sin((z_angle * D2R) / 2)
         c_x = cos((x_angle * D2R) / 2) * 0
