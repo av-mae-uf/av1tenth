@@ -56,8 +56,8 @@ class OdomPub(Node):
         self.timer = self.create_timer(timer_period_sec=0.15, callback=self.odom_callback)
         self.declare_parameter("9_axis_mode", False)
         axis_mode = self.get_parameter("9_axis_mode").get_parameter_value().bool_value
-        self.declare_parameter("z_angle_offset",0.0)
-        self.z_offset = self.get_parameter("z_angle_offset").get_parameter_value().float_value
+        self.declare_parameter("z_angle_offset", 0.0)
+        self.z_offset = self.get_parameter("z_angle_offset").get_parameter_value().double_value
         if axis_mode is True:
             self.serial_imu.nine_axis()
         else:
@@ -65,15 +65,15 @@ class OdomPub(Node):
 
     def odom_callback(self):
 
-        xdot = 0.0
-        ydot = 0.0
-        zdot = 0.0
+        roll_rate = 0.0
+        pitch_rate = 0.0
+        yaw_rate = 0.0
         y_acc = 0.0
         x_acc = 0.0
         z_acc = 0.0
         y_angle = 0.0
         x_angle = 0.0
-        z_angle = 0.0 
+        z_angle = 0.0
         mag_x = 0.0
         mag_y = 0.0
         mag_z = 0.0
