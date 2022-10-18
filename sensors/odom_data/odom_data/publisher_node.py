@@ -19,9 +19,9 @@ D2R = pi / 180
 
 
 class OdomSerial:
-    def __init__(self, port):
+    def __init__(self, port, baud_rate):
         self.serial_port = port
-        self.serial_usb = serial.Serial(self.serial_port, baudrate=9600, timeout=10)
+        self.serial_usb = serial.Serial(self.serial_port, baudrate=baud_rate, timeout=10)
 
     def serial_read(self, bytes=1):
         byte = self.serial_usb.read(bytes).hex()
@@ -50,8 +50,8 @@ class OdomSerial:
 class OdomPub(Node):
     def __init__(self):
         super().__init__("odom_pub")
-        self.serial_imu = OdomSerial("/dev/sensor/imu")
-        self.serial_encoder = OdomSerial("/dev/sensor/encoder")
+        self.serial_imu = OdomSerial("/dev/sensor/imu", 9600)
+        self.serial_encoder = OdomSerial("/dev/sensor/encoder", 115200)
         self.publisher = self.create_publisher(Odometry, "odometry", 10)
         self.timer = self.create_timer(timer_period_sec=0.15, callback=self.odom_callback)
         self.declare_parameter("9_axis_mode", False)
