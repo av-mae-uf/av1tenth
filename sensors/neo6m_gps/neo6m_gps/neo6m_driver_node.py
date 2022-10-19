@@ -65,7 +65,7 @@ class NEO6MDriver(Node):
 
             self.publisher_.publish(msgUTM)
             self.get_logger().info(
-                f"Publishing: Easting: {msgUTM.position.x}, Northing: {msgUTM.position.y} Azimuth:{azimuth}"
+                f"Publishing: Easting: {msgUTM.pose.position.x}, Northing: {msgUTM.pose.position.y} Azimuth:{azimuth}"
             )
 
 
