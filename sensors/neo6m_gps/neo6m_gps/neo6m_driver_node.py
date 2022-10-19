@@ -24,7 +24,9 @@ class NEO6MDriver(Node):
         # Set update rate to once a second (5hz) which is what you typically want.
         self.gps.send_command(b"PMTK220,200")
         self.last_print = time.monotonic()
-        self.publisher_ = self.create_publisher(msg_type=Pose, topic="GPSData", qos_profile=10)
+        self.publisher_ = self.create_publisher(
+            msg_type=PoseStamped, topic="GPSData", qos_profile=10
+        )
         self.timer = self.create_timer(timer_period_sec=0.33, callback=self.timer_callback)
 
     def timer_callback(self):
