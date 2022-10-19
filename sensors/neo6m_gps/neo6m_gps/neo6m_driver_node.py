@@ -11,7 +11,7 @@ import serial
 import utm
 from math import pi, sin, cos
 from rclpy.node import Node
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import PoseStamped
 
 
 class NEO6MDriver(Node):
@@ -51,14 +51,15 @@ class NEO6MDriver(Node):
                 track_angle = track_angle
 
             azimuth = track_angle * (pi / 180)
-            msgUTM = Pose()
-            msgUTM.position.x = easting
-            msgUTM.position.y = northing
-            msgUTM.position.z = 0.0
-            msgUTM.orientation.z = sin(azimuth / 2)
-            msgUTM.orientation.x = 0.0
-            msgUTM.orientation.y = 0.0
-            msgUTM.orientation.w = cos(azimuth / 2)
+            msgUTM = PoseStamped()
+            msgUTM.pose.position.x = easting
+            msgUTM.pose.position.y = northing
+            msgUTM.pose.position.z = 0.0
+            msgUTM.pose.orientation.z = sin(azimuth / 2)
+            msgUTM.pose.orientation.x = 0.0
+            msgUTM.pose.orientation.y = 0.0
+            msgUTM.pose.orientation.w = cos(azimuth / 2)
+            msgUTM.header.stamp = self.get_clock().now().to_msg()
 
             self.publisher_.publish(msgUTM)
             self.get_logger().info(

@@ -81,12 +81,12 @@ class OdomPub(Node):
         flag = False
 
         msg = Odometry()
-        
+
         while self.serial_encoder.serial_in_waiting():
             linear_speed = float(self.serial_encoder.serial_readline()) * (2 * pi * 120e-3) / 60
         self.get_logger().info(f"Linear Speed: {linear_speed}")
         count = 0
-
+        self.z_offset = self.get_parameter("z_angle_offset").get_parameter_value().double_value
         while self.serial_imu.serial_in_waiting():
             flag = True
             byte = self.serial_imu.serial_read()

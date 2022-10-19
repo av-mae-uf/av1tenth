@@ -135,6 +135,7 @@ class MotorController(Node):
 
         self.linear_vel = msg.linear.x  # m/s, +ve for fwd, -ve for rev
         self.angular_vel = msg.angular.z  # rad/s, +ve for CCW rotation
+        self.str_offset = self.get_parameter("steering_offset").get_parameter_value().double_value
 
         if self.limiter is True:
             self.linear_vel = min(self.linear_vel, 2)
@@ -187,8 +188,9 @@ class MotorController(Node):
 
         The range of PWM signals for the steering servo is between 750 and 2500 microseconds, which corresponds to 3000 and 9000
         quarter-microseconds."""
+        self.str_offset = self.get_parameter("steering_offset").get_parameter_value().double_value
         self.throttle_effort_percentage = msg.throttle_effort  # m/s, +ve for fwd, -ve for rev
-        self.steering_angle = msg.steering_angle  # rad, +ve for CCW rotation
+        self.steering_angle = msg.steering_angle + self.str_offset  # rad, +ve for CCW rotation
 
         if self.limiter is True:
             self.throttle_effort_percentage = min(self.throttle_effort_percentage, 25.0)
