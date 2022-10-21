@@ -77,6 +77,7 @@ class OdomPub(Node):
         mag_x = 0.0
         mag_y = 0.0
         mag_z = 0.0
+        linear_speed = 0.0
 
         flag = False
 
