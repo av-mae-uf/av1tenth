@@ -123,10 +123,10 @@ class OdomPub(Node):
         z_angle += self.z_offset
         c_z = cos((z_angle * D2R) / 2)
         s_z = sin((z_angle * D2R) / 2)
-        c_x = cos((x_angle * D2R) / 2) * 0
-        s_x = sin((x_angle * D2R) / 2) * 0
-        c_y = cos((y_angle * D2R) / 2) * 0
-        s_y = sin((y_angle * D2R) / 2) * 0
+        c_x = cos((x_angle * D2R * 0) / 2)
+        s_x = sin((x_angle * D2R * 0) / 2)
+        c_y = cos((y_angle * D2R * 0) / 2)
+        s_y = sin((y_angle * D2R * 0) / 2)
         msg.pose.pose.orientation.w = c_x * c_y * c_z + s_x * s_y * s_z
         msg.pose.pose.orientation.x = s_x * c_y * c_z - c_x * s_y * s_z
         msg.pose.pose.orientation.y = c_x * s_y * c_z + s_x * c_y * s_z
