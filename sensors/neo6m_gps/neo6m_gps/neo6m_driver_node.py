@@ -18,7 +18,7 @@ class NEO6MDriver(Node):
     def __init__(self):
         super().__init__("neo6m_driver")
         self.last_time_sec = 0
-        uart = serial.Serial("/dev/ttyAML1", baudrate=9600, timeout=10)  # Opening Serial Ports
+        uart = serial.Serial("/dev/sensor/gps", baudrate=9600, timeout=10)  # Opening Serial Ports
         self.gps = adafruit_gps.GPS(uart, debug=False)  # Using UART or PySerial
         self.gps.send_command(b"PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
         # Set update rate to once a second (5hz) which is what you typically want.
