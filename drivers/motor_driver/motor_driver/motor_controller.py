@@ -32,7 +32,7 @@ PORT = ports[USER]
 
 
 class SerialCmds:
-    def __init__(self, port):
+    def __init__(self, port: str):
         # Change according to what serial port you connected the Maestro to
         self.serial_port = port
         self.serial_usb = serial.Serial(self.serial_port, 115200)  # Opening the serial port
@@ -42,6 +42,7 @@ class SerialCmds:
         # Setting the channel number for the board where we have plugged in our servo or drive motor respectively.
         self.steering_channel = 0
         self.drive_channel = 1
+
         # The following commands are setting the speed and acceleration of the servo/drive. Can be changed to be slower.
         # Speed is generally based on the PWM signal and how many microseconds you wish to take to get to the target.
         # Acceleration
@@ -87,11 +88,11 @@ class SerialCmds:
     
     def update_cmds(self, throttle_effort: float, steering_target: float) -> None:
         # Don't send repeated commands if they have not changed.
-        if not isclose(throttle_effort, self.last_throttle_effort, 0.005):
+        if not isclose(throttle_effort, self.last_throttle_effort, rel_tol=0.005):
             self.set_target(channel=self.drive_channel, target=throttle_effort)
             self.last_throttle_effort = throttle_effort
 
-        if not isclose(steering_target, self.last_steering_target, 0.005):
+        if not isclose(steering_target, self.last_steering_target, rel_tol=0.005):
             self.set_target(channel=self.steering_channel, target=steering_target)
             self.last_steering_target = steering_target
 
