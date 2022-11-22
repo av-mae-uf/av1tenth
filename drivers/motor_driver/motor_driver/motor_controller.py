@@ -35,7 +35,7 @@ class SerialCmds:
     def __init__(self, port: str):
         # Change according to what serial port you connected the Maestro to
         self.serial_port = port
-        self.serial_usb = serial.Serial(self.serial_port, 115200)  # Opening the serial port
+        self.serial_usb = serial.Serial(self.serial_port, 38400, write_timeout=0.5)  # Opening the serial port
         # Setting the command variable to Pololu Protocol. First command is just an arbitrary starting byte.
         self.pol_prot_cmd = chr(0xAA) + chr(0x0C)
 
@@ -59,11 +59,15 @@ class SerialCmds:
         if self.serial_usb.is_open():
             self.serial_usb.close()  # Closing the serial port after completion
 
-    def cmd_out(self, cmd: str) -> None:
+    def cmd_out(self, cmd: str) -> str:
         cmd_out_byte = self.pol_prot_cmd + cmd
-        self.serial_usb.write(bytes(cmd_out_byte, "latin-1"))
-
-    def set_target(self, channel: int, target: float) -> None:
+        try:
+            self.serial_usb.write(bytes(cmd_out_byte, "latin-1"))
+            return "Sucessful write"
+        except serial.SerialException as ex:
+            return f"Failed to write: {cmd} with exeception: {ex}"
+            
+    def set_target(self, channel: int, target: float) -> str:
         # When setting the target/acceleration/speed the first seven bits will be considered the low bits and the last 7 bits will be considered the high bits.
         #  This is shown by the target of 1500 us X 4 = 6000 which in binary is 0101110 1110000
         # Converting from microseconds to quarter microseconds for data transmission
@@ -71,7 +75,8 @@ class SerialCmds:
         lsb = int(target) & 0x7F
         msb = (int(target) >> 7) & 0x7F
         cmd = chr(0x04) + chr(channel) + chr(lsb) + chr(msb)
-        self.cmd_out(cmd)
+        output_str = self.cmd_out(cmd)
+        return output_str
 
     def set_speed(self, channel: int, speed: int) -> None:
         lsb = speed & 0x7F
@@ -89,12 +94,13 @@ class SerialCmds:
     def update_cmds(self, throttle_effort: float, steering_target: float) -> None:
         # Don't send repeated commands if they have not changed.
         if not isclose(throttle_effort, self.last_throttle_effort, rel_tol=0.005):
-            self.set_target(channel=self.drive_channel, target=throttle_effort)
+            throttle_str = self.set_target(channel=self.drive_channel, target=throttle_effort)
             self.last_throttle_effort = throttle_effort
 
         if not isclose(steering_target, self.last_steering_target, rel_tol=0.005):
-            self.set_target(channel=self.steering_channel, target=steering_target)
+            steering_str = self.set_target(channel=self.steering_channel, target=steering_target)
             self.last_steering_target = steering_target
+        return throttle_str + '\n' + steering_str
 
     def set_lights(self, color: str) -> None:
         """ 
@@ -198,7 +204,9 @@ class MotorController(Node):
         steering_target = round(6000 - steer_angle * ratio_steering)
 
         # Send new set point values to the pololu
-        self.pololu.update_cmds(throttle_effort, steering_target)
+        result = self.pololu.update_cmds(throttle_effort, steering_target)
+
+        self.get_logger().warn(result)
 
     def steering_angle_send(self, msg: VehCmd) -> None:
         """
@@ -230,7 +238,9 @@ class MotorController(Node):
         steering_target = round(6000 - self.steering_angle * ratio_steering)
 
         # Send new set point values to the pololu
-        self.pololu.update_cmds(throttle_effort, steering_target)
+        result = self.pololu.update_cmds(throttle_effort, steering_target)
+
+        self.get_logger().warn(result)
 
 
 def main(args=None):
