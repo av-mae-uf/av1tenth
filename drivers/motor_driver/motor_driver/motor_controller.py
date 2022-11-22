@@ -56,7 +56,7 @@ class SerialCmds:
         self.last_light_color = 'off'
 
     def serial_close(self) -> None:
-        if self.serial_usb.is_open():
+        if self.serial_usb.is_open:
             self.serial_usb.close()  # Closing the serial port after completion
 
     def cmd_out(self, cmd: str) -> str:
