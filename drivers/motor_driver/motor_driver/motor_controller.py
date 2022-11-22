@@ -92,8 +92,8 @@ class SerialCmds:
         self.cmd_out(cmd)
     
     def update_cmds(self, throttle_effort: float, steering_target: float) -> None:
-        throttle_str = ''
-        steering_str = ''
+        throttle_str = ' '
+        steering_str = ' '
         # Don't send repeated commands if they have not changed.
         if not isclose(throttle_effort, self.last_throttle_effort, rel_tol=0.005):
             throttle_str = self.set_target(channel=self.drive_channel, target=throttle_effort)
