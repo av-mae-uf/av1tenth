@@ -65,7 +65,7 @@ class SerialCmds:
             self.serial_usb.write(bytes(cmd_out_byte, "latin-1"))
             return "Sucessful write"
         except serial.SerialException as ex:
-            return f"Failed to write: {cmd} with exeception: {ex}"
+            return f"Failed to write with exeception: {ex}"
             
     def set_target(self, channel: int, target: float) -> str:
         # When setting the target/acceleration/speed the first seven bits will be considered the low bits and the last 7 bits will be considered the high bits.
