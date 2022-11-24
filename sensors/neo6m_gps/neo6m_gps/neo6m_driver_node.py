@@ -4,78 +4,81 @@
 # Date Created: May 2022
 # Description: Python node to interface with NEO6M GPS module. Uses adafruit_gps package and publishes to a topic LatLongData with a Pose msg as UTM.
 
-import rclpy
-import time
-import adafruit_gps
+from math import pi, sin, cos
+
 import serial
 import utm
-from math import pi, sin, cos
+import adafruit_gps
+
+import rclpy
 from rclpy.node import Node
+
 from geometry_msgs.msg import PoseStamped
 
 
 class NEO6MDriver(Node):
     def __init__(self):
         super().__init__("neo6m_driver")
-        self.last_time_sec = 0
-        uart = serial.Serial("/dev/sensor/gps", baudrate=9600, timeout=10)  # Opening Serial Ports
+
+        uart = serial.Serial("/dev/sensor/gps", baudrate=9600, timeout=0.5)  # Opening Serial Ports
         self.gps = adafruit_gps.GPS(uart, debug=False)  # Using UART or PySerial
+
+        # No idea what this does.
         self.gps.send_command(b"PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
-        # Set update rate to once a second (5hz) which is what you typically want.
+
+        # Set update rate to once a second (1 Hz) which is what you typically want.
         self.gps.send_command(b"PMTK220,200")
-        self.last_print = time.monotonic()
+
         self.publisher_ = self.create_publisher(
             msg_type=PoseStamped, topic="GPSData", qos_profile=10
         )
-        self.timer = self.create_timer(timer_period_sec=0.33, callback=self.timer_callback)
+
+        # Two timers. One to call the GPS update. One to publish a new gps message.
+        self.update_timer = self.create_timer(timer_period_sec=0.1, callback=self.update_callback)
+        self.timer = self.create_timer(timer_period_sec=1.0, callback=self.timer_callback)
+
+        self.get_logger().info("NEO6M driver is running...")
+    
+    def update_callback(self):
+        """ Call the update function at a rate faster than the new data."""
+        self.gps.update()
 
     def timer_callback(self):
-        while self.gps.update():  # clean out buffer
-            pass
 
-        self.current = time.monotonic()
-        if self.current - self.last_print >= 0.32:
-            self.last_print = self.current
-            while not self.gps.has_fix:
-                time.sleep(0.5)
-                self.get_logger().warn("Waiting for fix")
-                self.gps.update()
-            easting, northing, _, _ = utm.from_latlon(self.gps.latitude, self.gps.longitude)
-            if self.last_time_sec != self.gps.timestamp_utc.tm_sec:
-                self.last_time_sec = self.gps.timestamp_utc.tm_sec
-            track_angle = self.gps.track_angle_deg
+        if self.gps.has_fix == False:
+            self.get_logger().warn("Waiting for fix.")
+            return
+            
+        easting, northing, _, _ = utm.from_latlon(self.gps.latitude, self.gps.longitude)
 
-            track_angle = 999.9999 if track_angle is None else track_angle
+        track_angle = 999.9999 if self.gps.track_angle_deg is None else track_angle
 
-            if track_angle is None:
-                track_angle = 999.99999999
-            else:
-                track_angle = track_angle
+        azimuth = track_angle * (pi / 180)
 
-            azimuth = track_angle * (pi / 180)
-            msgUTM = PoseStamped()
-            msgUTM.pose.position.x = easting
-            msgUTM.pose.position.y = northing
-            msgUTM.pose.position.z = 0.0
-            msgUTM.pose.orientation.z = sin(azimuth / 2)
-            msgUTM.pose.orientation.x = 0.0
-            msgUTM.pose.orientation.y = 0.0
-            msgUTM.pose.orientation.w = cos(azimuth / 2)
-            msgUTM.header.stamp = self.get_clock().now().to_msg()
+        msgUTM = PoseStamped()
+        msgUTM.header.stamp = self.get_clock().now().to_msg()
+        msgUTM.pose.position.x = easting
+        msgUTM.pose.position.y = northing
+        msgUTM.pose.position.z = 0.0
+        msgUTM.pose.orientation.z = sin(azimuth / 2)
+        msgUTM.pose.orientation.x = 0.0
+        msgUTM.pose.orientation.y = 0.0
+        msgUTM.pose.orientation.w = cos(azimuth / 2)
 
-            self.publisher_.publish(msgUTM)
-            self.get_logger().info(
-                f"Publishing: Easting: {msgUTM.pose.position.x}, Northing: {msgUTM.pose.position.y} Azimuth:{azimuth}"
-            )
+        self.publisher_.publish(msgUTM)
 
 
 def main(args=None):
     rclpy.init(args=args)
     neo6m_driver = NEO6MDriver()
+
     try:
         rclpy.spin(neo6m_driver)
+
     except KeyboardInterrupt:
+        neo6m_driver.gps.uart.close()
         neo6m_driver.get_logger().warn("NEO6M Driver is Shut Down")
+
     finally:
         neo6m_driver.destroy_node()
         rclpy.shutdown()
