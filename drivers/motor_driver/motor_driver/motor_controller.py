@@ -53,7 +53,7 @@ class SerialCmds:
 
         self.last_throttle_effort = 0.0
         self.last_steering_target = 0.0
-        self.last_light_color = 'off'
+        self.last_light_color = "off"
 
     def serial_close(self) -> None:
         if self.serial_usb.is_open:
@@ -67,13 +67,13 @@ class SerialCmds:
         except serial.SerialException as ex:
             # It is ok if it fails to write. Another message will come.
             return False
-            
+
     def set_target(self, channel: int, target: float) -> bool:
         """
-            When setting the target/acceleration/speed the first seven bits will be considered the low bits and
-            the last 7 bits will be considered the high bits.
-            This is shown by the target of 1500 us X 4 = 6000 which in binary is 0101110 1110000
-            Converting from microseconds to quarter microseconds for data transmission
+        When setting the target/acceleration/speed the first seven bits will be considered the low bits and
+        the last 7 bits will be considered the high bits.
+        This is shown by the target of 1500 us X 4 = 6000 which in binary is 0101110 1110000
+        Converting from microseconds to quarter microseconds for data transmission
         """
         lsb, msb = int(target) & 0x7F, (int(target) >> 7) & 0x7F
         cmd = chr(0x04) + chr(channel) + chr(lsb) + chr(msb)
@@ -90,40 +90,40 @@ class SerialCmds:
         # This is the cmd byte data for the acceleration state
         cmd = chr(0x09) + chr(channel) + chr(lsb) + chr(msb)
         self.cmd_out(cmd)
-    
+
     def update_cmds(self, throttle_effort: float, steering_target: float) -> None:
-        """ Use to send throttle and steering commands to the pololu """
+        """Use to send throttle and steering commands to the pololu"""
         # Don't send repeated commands if they have not changed.
         if not isclose(throttle_effort, self.last_throttle_effort, rel_tol=0.005):
             successful = self.set_target(channel=self.drive_channel, target=throttle_effort)
-            if successful == True: # Only save previous value if the command was successfully sent to pololu
+            if successful == True:  # Only save previous value if the command was successfully sent to pololu
                 self.last_throttle_effort = throttle_effort
 
         if not isclose(steering_target, self.last_steering_target, rel_tol=0.005):
             successful = self.set_target(channel=self.steering_channel, target=steering_target)
-            if successful == True: # Only save previous value if the command was successfully sent to pololu
+            if successful == True:  # Only save previous value if the command was successfully sent to pololu
                 self.last_steering_target = steering_target
 
     def set_lights(self, color: str) -> None:
-        """ 
-            Set color of LEDs. Only will send commands over serial when a different color
-                is chosen than what was previously sent.
         """
-        if color == "red" and self.last_light_color != 'red':
+        Set color of LEDs. Only will send commands over serial when a different color
+            is chosen than what was previously sent.
+        """
+        if color == "red" and self.last_light_color != "red":
             self.set_target(3, 3000)  # Green LED
             self.set_target(4, 6000)  # Red LED
             self.set_target(5, 3000)  # Yellow LED
-            self.last_light_color == 'red'
-        elif color == "yellow" and self.last_light_color != 'yellow':
+            self.last_light_color == "red"
+        elif color == "yellow" and self.last_light_color != "yellow":
             self.set_target(3, 3000)  # Green LED
             self.set_target(4, 3000)  # Red LED
             self.set_target(5, 6000)  # Yellow LED
-            self.last_light_color == 'yellow'
-        elif color == "off" and self.last_light_color != 'off':
+            self.last_light_color == "yellow"
+        elif color == "off" and self.last_light_color != "off":
             self.set_target(3, 3000)  # Green LED
             self.set_target(4, 3000)  # Red LED
             self.set_target(5, 3000)  # Yellow LED
-            self.last_light_color == 'off'
+            self.last_light_color == "off"
 
     def off_state(self) -> None:
         self.set_target(1, 6000)
@@ -138,9 +138,7 @@ class MotorController(Node):
 
         self.pololu = SerialCmds(PORT)
         self.pololu.set_target(3, 3000)
-        self.subscription = self.create_subscription(
-            Twist, "vehicle_command_twist", self.twist_send, 20
-        )
+        self.subscription = self.create_subscription(Twist, "vehicle_command_twist", self.twist_send, 20)
         self.lights = self.create_subscription(Int16, "led_color", self.led_cllbk, 20)
         self.steering_angle_sub = self.create_subscription(
             VehCmd, "vehicle_command_angle", self.steering_angle_send, 20
@@ -155,7 +153,7 @@ class MotorController(Node):
 
     def led_cllbk(self, msg: Int16) -> None:
         """
-            This callback sets the led colors on your car, based on the subscription to the topic led_color.
+        This callback sets the led colors on your car, based on the subscription to the topic led_color.
         """
         if msg.data == 0:
             self.pololu.set_lights("off")
@@ -168,11 +166,11 @@ class MotorController(Node):
 
     def twist_send(self, msg: Twist) -> None:
         """
-            The neutral point PWM period for both the servo and the brushed motor is about 1500 us. The Maestro Servo Controller requires values
-            in quarter-microseconds,i.e. microseconds*4. The new neutral point will now be 1500*4 = 6000 quarter-microseconds.
+        The neutral point PWM period for both the servo and the brushed motor is about 1500 us. The Maestro Servo Controller requires values
+        in quarter-microseconds,i.e. microseconds*4. The new neutral point will now be 1500*4 = 6000 quarter-microseconds.
 
-            The range of PWM signals for the steering servo is between 750 and 2500 microseconds, which corresponds to 3000 and 9000
-            quarter-microseconds.
+        The range of PWM signals for the steering servo is between 750 and 2500 microseconds, which corresponds to 3000 and 9000
+        quarter-microseconds.
         """
         self.linear_vel = msg.linear.x  # m/s, +ve for fwd, -ve for rev
         self.angular_vel = msg.angular.z  # rad/s, +ve for CCW rotation
@@ -208,14 +206,13 @@ class MotorController(Node):
         # Send new set point values to the pololu
         self.pololu.update_cmds(throttle_effort, steering_target)
 
-
     def steering_angle_send(self, msg: VehCmd) -> None:
         """
-            The neutral point PWM period for both the servo and the brushed motor is about 1500 us. The Maestro Servo Controller requires values
-            in quarter-microseconds,i.e. microseconds*4. The new neutral point will now be 1500*4 = 6000 quarter-microseconds.
+        The neutral point PWM period for both the servo and the brushed motor is about 1500 us. The Maestro Servo Controller requires values
+        in quarter-microseconds,i.e. microseconds*4. The new neutral point will now be 1500*4 = 6000 quarter-microseconds.
 
-            The range of PWM signals for the steering servo is between 750 and 2500 microseconds, which corresponds to 3000 and 9000
-            quarter-microseconds.
+        The range of PWM signals for the steering servo is between 750 and 2500 microseconds, which corresponds to 3000 and 9000
+        quarter-microseconds.
         """
         self.str_offset = self.get_parameter("steering_offset").get_parameter_value().double_value
         self.throttle_effort_percentage = msg.throttle_effort  # m/s, +ve for fwd, -ve for rev

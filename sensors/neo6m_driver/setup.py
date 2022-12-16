@@ -1,10 +1,10 @@
 from setuptools import setup
 
-package_name = "neo6m_gps"
+package_name = "neo6m_driver"
 
 setup(
     name=package_name,
-    version="1.0.0",
+    version="0.2.0",
     packages=[package_name],
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
@@ -18,6 +18,6 @@ setup(
     license="MIT",
     tests_require=["pytest"],
     entry_points={
-        "console_scripts": ["driver = neo6m_gps.neo6m_driver_node:main"],
+        "console_scripts": ["driver = neo6m_driver.neo6m_driver_node:main"],
     },
 )

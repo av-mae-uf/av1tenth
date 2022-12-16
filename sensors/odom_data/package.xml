@@ -6,13 +6,7 @@
   <description>Package for publishing IMU Data, which includes, angle off true north, angular acceleration and velocity, etc.</description>
   <maintainer email="apenumarti@ufl.edu">Aditya</maintainer>
   <license>MIT</license>
-
-  <test_depend>ament_copyright</test_depend>
-  <test_depend>ament_flake8</test_depend>
-  <test_depend>ament_pep257</test_depend>
-  <test_depend>python3-pytest</test_depend>
   <exec_depend>python3-pyserial</exec_depend>
-
   <export>
     <build_type>ament_python</build_type>
   </export>
