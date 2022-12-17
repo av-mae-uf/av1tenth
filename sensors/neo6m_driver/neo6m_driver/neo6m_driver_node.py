@@ -27,6 +27,7 @@ class NEO6MDriver(Node):
         self.timer = self.create_timer(timer_period_sec=1.0, callback=self.timer_callback)
 
         self.get_logger().info("NEO6M driver is running...")
+        self.position_deviation = 2.5  # meters
 
     def update_callback(self):
         """Call the update function at a rate faster than the new data."""
@@ -38,6 +39,18 @@ class NEO6MDriver(Node):
         if self.gps.has_fix is False:
             self.get_logger().warn("Waiting for fix.")
             return
+        # To publish the position covariance an array must be created
+        covariance_matrix = (
+            (
+                np.array(
+                    [
+                        [(self.hdop * self.position_deviation) ** 2, 0, 0],
+                        [0, (self.hdop * self.position_deviation) ** 2, 0],
+                        [0, 0, 0],
+                    ]
+                )
+            ).flatten()
+        ).tolist()
 
         msg = NavSatFix()
         msg.latitude = self.gps.latitude
@@ -46,6 +59,8 @@ class NEO6MDriver(Node):
         msg.header.frame_id = "world"
         msg.status.status = -1 if self.gps.has_fix is False else 0  # -1 indicates that there is no fix, 0 the opposite
         msg.status.service = 1  # For GPS service type
+        msg.position_covariance = covariance_matrix
+        msg.position_covariance_type = 1  # 1 Means approximated from HDOP
 
         self.publisher_.publish(msg)
 
