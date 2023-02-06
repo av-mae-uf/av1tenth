@@ -1,7 +1,7 @@
 
 /*  Written by: Patrick Neal
  *  Email: neap@ufl.edu
- *  Last Updated: 1/26/2023
+ *  Last Updated: 2/6/2023
  *  
  *  To Do:
  *    - Add LED functionality to code
@@ -21,16 +21,15 @@
 
 // ---- Pin Definitions ----
 // PN - Adjust the pin mapping during testing
-#define YELLOW_LED 0
-#define GREEN_LED 0
-#define RED_LED 0
+#define YELLOW_LED_PIN  0
+#define GREEN_LED_PIN   0
+#define RED_LED_PIN     0
 
-// ---- DIO Debouncing ----
-#define ON_COUNT 12
-#define OFF_COUNT 30
-
-#define ACTIVE_STATE      1
-#define INACTIVE_STATE    2
+// ---- State/LED State ----
+#define ACTIVE            1
+#define INACTIVE          2
+#define LOW_BATTERY       3
+#define CRITICAL_BATTERY  4
 
 // ---- Serial Communication Parameters ----
 #define BAUDRATE        115200
@@ -46,26 +45,28 @@
 //======================================================================================
 //===============================Global Variables=======================================
 //======================================================================================
-int State = INACTIVE_STATE;         // start in the inactive State, ignition is off
-int desiredState = INACTIVE_STATE;  // stores the desired state based on state transition logic
+int State = INACTIVE;         // start in the inactive State, ignition is off
+int desiredState = INACTIVE;  // stores the desired state based on state transition logic
+
+enum ledColor {
+  GREEN = GREEN_LED_PIN,
+  YELLOW = YELLOW_LED_PIN,
+  RED = RED_LED_PIN
+};
 
 // ---- Received From ROS2 Driver ----
 byte desiredSteeringAngle = 0;             // 0-180 angle value from the ROS2 driver
 byte desiredSpeed = 0;                     // 0 if no reverse requested from ROS2 driver, 1 if requested from ROS2 driver
-byte led = 0;                       // 0 if no cruise control requested from ROS2 driver, 1 if requested from ROS2 driver
-bool blinkLED = false;             // holds the "gear" desired by the ROS2 driver, 1, 2, or 3
-
-double throttlePercentEffort  = 0;        // these are the global % effort variables used to smooth transitions between states
-byte currentGear = 1;                     // holds the "gear" currently active 1, 2, or 3
-byte brakeEngaged = false;
 
 // ---- IMU Variables ----
 struct bno055_t BNO;
-
 struct bno055_gyro gyroData;
 struct bno055_mag magData;
 struct bno055_quaternion quatData;
 struct bno055_linear_accel accelData;
+
+bool criticalBattery = false;
+bool disableIO = false;
 
 // ---- Serial Variables ----
 byte messageStarted = false;

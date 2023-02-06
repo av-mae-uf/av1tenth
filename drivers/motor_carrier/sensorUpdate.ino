@@ -1,6 +1,6 @@
 void sensorUpdate()
 {
-
+  return;
   // Read Encoder values
   // encoder1.getRawCount();
   // encoder1.getCountPerSecond();
