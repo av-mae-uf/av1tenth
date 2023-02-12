@@ -1,14 +1,15 @@
-# Program: Motor Controller ROS2 Node
+# Program: Pololu Driver ROS2 Node
 # Written by: Aditya Penumarti
 # Written For: EML4930 Autonomous Vehicles Class at the University of Florida
 # Date Created: May 2022
-# Description: Python node for Pololu motor controller based upon messages published
+# Description: Python driver for Pololu motor controller based upon messages published
 # to a topic based upon sensor data, joystick data or other requirements. It is essentially a ROS2 node that
 # writes serial lines to Polulu Maestro Mini servo controller to control servos and drive motor
 # This node will take steering_angle msg and throttle_cmd msg as floats to control RC Car.
 # The throttle cmd will be % effort. The throttle will be limited to ensure safe operation.
 # Polulu code was written from a combination of https://github.com/FRC4564/Maestro/blob/master/maestro.py
 # and Pololu Maestro Documentation
+
 from math import pi, atan, isclose
 
 import os
@@ -138,12 +139,12 @@ class PololuDriver(Node):
 
         self.pololu = SerialCmds(PORT)
         self.pololu.set_target(3, 3000)
-        self.subscription = self.create_subscription(Twist, "vehicle_command_twist", self.twist_send, 20)
-        self.lights = self.create_publisher(Int16, "led_color",20)
-        self.steering_angle_sub = self.create_subscription(
-            AckermannDriveStamped, "vehicle_command_ackermann", self.steering_angle_send, 20
+        self.subscription1 = self.create_subscription(Twist, "vehicle_command_twist", self.twist_update, 20)
+        self.publisher = self.create_publisher(Int16, "led_color",20)
+        self.subscription2 = self.create_subscription(
+            AckermannDriveStamped, "vehicle_command_ackermann", self.ackermann_drive_update, 20
         )
-        self.timer = self.create_timer(2.0,self.led_cllbk)
+        self.timer = self.create_timer(2.0,self.led_callback)
         self.declare_parameter("steering_offset", 0.0)
         self.str_offset = self.get_parameter("steering_offset").get_parameter_value().double_value
         self.declare_parameter("limiter", True)
@@ -154,7 +155,7 @@ class PololuDriver(Node):
         self.pololu.set_lights("yellow")
         
 
-    def led_cllbk(self) -> None:
+    def led_callback(self) -> None:
         """
         This callback sets the led colors on your car, based on the subscription to the topic led_color.
         """
@@ -170,10 +171,10 @@ class PololuDriver(Node):
         else:
             msg.data = 0
 
-        self.lights.publish(msg)
+        self.publisher.publish(msg)
         self.state = "yellow"
 
-    def twist_send(self, msg: Twist) -> None:
+    def twist_update(self, msg: Twist) -> None:
         """
         The neutral point PWM period for both the servo and the brushed motor is about 1500 us. The Maestro Servo Controller requires values
         in quarter-microseconds,i.e. microseconds*4. The new neutral point will now be 1500*4 = 6000 quarter-microseconds.
@@ -217,7 +218,7 @@ class PololuDriver(Node):
         # Send new set point values to the pololu
         self.pololu.update_cmds(throttle_effort, steering_target)
 
-    def steering_angle_send(self, msg: AckermannDriveStamped) -> None:
+    def ackermann_drive_update(self, msg: AckermannDriveStamped) -> None:
         """
         The neutral point PWM period for both the servo and the brushed motor is about 1500 us. The Maestro Servo Controller requires values
         in quarter-microseconds,i.e. microseconds*4. The new neutral point will now be 1500*4 = 6000 quarter-microseconds.
