@@ -28,9 +28,9 @@ void sendMessage()
 	// writeData[i+1] = (tempUInt16 >> 8) & 0xFF;
 
  
-  uint16_t checksum =  checksumCalculator(sendMessageData+1, TX_PACKET_SIZE-3)
+  uint16_t checksum =  checksumCalculator(sendMessageData+1, TX_PACKET_SIZE-3);
 
-  sendMessageData[4] = byte((unsigned int)crcString.toInt() % CRC_DIVIDER);
+  // sendMessageData[4] = byte((unsigned int)crcString.toInt() % CRC_DIVIDER);
   sendMessageData[5] = 147;
   
   //Write data to serial

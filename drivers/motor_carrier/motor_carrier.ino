@@ -8,6 +8,7 @@
  *    - update sendMessage for more data
  *    - Can test the motor control without any of the data feedback.
  *    - Add functionality to get low battery, create new state for "critically" low battery
+ *    - System needs to be Calibrated. Need to add software to describe this.
  *    
  *  Notes:
  *    * Allow the arduino some time after opening a serial connection. (like 2 seconds) 
@@ -80,18 +81,23 @@ byte receivedMessage[RX_PACKET_SIZE-2];
 //======================================================================================
 void setup() 
 {
-  
+  Wire.begin(); // Required for communication with the BNO055 sensor.
+
   //Initialization of the BNO055
   BNO_Init(&BNO); //Assigning the structure to hold information about the device
 
-  //Configuration to NDoF mode
+  // Adjust axis to make ENU when the XT connector is on the front of the vehicle
+  delay(50);  
+  bno055_set_x_remap_sign(0x01);
+  delay(50);
+  bno055_set_y_remap_sign(0x01);
+  delay(50);
+  bno055_set_z_remap_sign(0x00);
+  delay(50);
+
+  //Configuration to NDoF mode - Make any configuration changes before this command!
   bno055_set_operation_mode(OPERATION_MODE_NDOF);
-
-  // Does there need to be a delay after every set function call?
-  delay(1);
-  bno055_set_axis_remap_value(REMAP_X_Y);
-
-  bno055_set_y_remap_sign(BNO055_REMAP_Y_SIGN__MSK);
+  delay(50);
 
   encoder1.resetCounter(0);
   
