@@ -144,7 +144,7 @@ class PololuDriver(Node):
         self.subscription2 = self.create_subscription(
             AckermannDriveStamped, "vehicle_command_ackermann", self.ackermann_drive_update, 20
         )
-        self.timer = self.create_timer(2.0,self.led_callback)
+        self.timer = self.create_timer(2.0, self.led_callback)
         self.declare_parameter("steering_offset", 0.0)
         self.str_offset = self.get_parameter("steering_offset").get_parameter_value().double_value
         self.declare_parameter("limiter", True)
@@ -163,8 +163,6 @@ class PololuDriver(Node):
         if self.state == "red":
             msg.data = 1
             self.pololu.set_lights("red")
-            
-
         elif self.state == "yellow":
             msg.data = 2
             self.pololu.set_lights("yellow")
@@ -268,9 +266,9 @@ def main(args=None):
         pololu_driver.get_logger().warn("The pololu driver node is now off")
 
     finally:
-        pololu_driver.lights.publish(msg_lights)
+        pololu_driver.publisher.publish(msg_lights)
         time.sleep(1)
-        pololu_driver.lights.publish(msg_lights)
+        pololu_driver.publisher.publish(msg_lights)
         pololu_driver.destroy_node()
         rclpy.shutdown()
 
