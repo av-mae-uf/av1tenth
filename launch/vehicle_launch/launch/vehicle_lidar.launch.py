@@ -41,5 +41,6 @@ def generate_launch_description():
     ld.add_action(pololu_driver_node)
     ld.add_action(gps_node)
     ld.add_action(odometry_driver_node)
+    ld.add_action(lidar_node)
     
     return ld
