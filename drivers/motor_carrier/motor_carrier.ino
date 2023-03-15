@@ -19,6 +19,7 @@
 // Servos and Encoder objects are initialized in this header
 #include <ArduinoMotorCarrier.h>
 #include <BNO055_support.h>
+#include "CRC16.h"
 
 // ---- Pin Definitions ----
 // PN - Adjust the pin mapping during testing
@@ -34,14 +35,14 @@
 
 // ---- Serial Communication Parameters ----
 #define BAUDRATE        115200
-#define TX_PACKET_SIZE  8
-#define RX_PACKET_SIZE  5
-#define CRC_DIVIDER     256
+#define TX_PACKET_SIZE  11
+#define RX_PACKET_SIZE  6
 #define HEARTBEAT_TIMEOUT 3000 // Time in milliseconds that must pass before heart beat timeout is triggered
 
 // ---Loop Timers----
-#define STATE_TIMER 50   // Time in millseconds between each call of the state loop (~20Hz)
-#define SEND_TIMER 50   // Time in millseconds between each call of sendMessage (~20Hz)
+#define STATE_TIMER 50  // Time in milleseconds between each call of the state loop (~20Hz)
+#define SEND_TIMER 50   // Time in milleseconds between each call of sendMessage (~20Hz)
+#define PING_TIMER 100  // Time in millisecods between each controller.ping() (~20HZ)
 
 //======================================================================================
 //===============================Global Variables=======================================
@@ -59,12 +60,18 @@ enum ledColor {
 byte desiredSteeringAngle = 0;             // 0-180 angle value from the ROS2 driver
 byte desiredSpeed = 0;                     // 0 if no reverse requested from ROS2 driver, 1 if requested from ROS2 driver
 
+// ---- Encoder Variables ----
+float RPM1;
+float RPM2;
+
 // ---- IMU Variables ----
 struct bno055_t BNO;
 struct bno055_gyro gyroData;
 struct bno055_mag magData;
+struct bno055_euler eulerData;
 struct bno055_quaternion quatData;
 struct bno055_linear_accel accelData;
+uint16_t enu_heading;
 
 bool criticalBattery = false;
 bool disableIO = false;
@@ -85,24 +92,17 @@ void setup()
 
   //Initialization of the BNO055
   BNO_Init(&BNO); //Assigning the structure to hold information about the device
-
-  // Adjust axis to make ENU when the XT connector is on the front of the vehicle
-  delay(50);  
-  bno055_set_x_remap_sign(0x01);
-  delay(50);
-  bno055_set_y_remap_sign(0x01);
-  delay(50);
-  bno055_set_z_remap_sign(0x00);
   delay(50);
 
   //Configuration to NDoF mode - Make any configuration changes before this command!
   bno055_set_operation_mode(OPERATION_MODE_NDOF);
   delay(50);
-
-  encoder1.resetCounter(0);
   
   // Initialize the serial
   Serial.begin(BAUDRATE);
+
+  encoder1.resetCounter(0);
+  encoder2.resetCounter(0);
 }
 
 
@@ -111,9 +111,11 @@ void setup()
 //======================================================================================
 void loop() 
 {
-  static unsigned long lastStateTime = 0, lastSendTime = 0, lastReceivedMsgTime = 0;
+  static unsigned long lastStateTime = 0, lastSendTime = 0, lastReceivedMsgTime = 0, lastPingTime = 0;
   static bool isValidMsg = false;
   unsigned long currentTime = 0;
+
+  controller.ping();
 
   if(messageComplete)
   { 
@@ -138,5 +140,12 @@ void loop()
     sensorUpdate();
     sendMessage();
     lastSendTime = currentTime;
+  }
+
+  // Ping the controller. I have no idea if there is a desired rate.
+  if(currentTime >= (lastPingTime + PING_TIMER))
+  {
+    controller.ping();
+    lastPingTime = currentTime;
   }
 }

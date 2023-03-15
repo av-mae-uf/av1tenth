@@ -3,16 +3,15 @@
 //======================================================================================
 bool parseReceivedMessage(byte* message)
 {
-  String crcString;
-  // Check CRC
-  for(int i = 0; i < RX_PACKET_SIZE-3; i++)
-  {
-    crcString.concat(message[i]);
-  }
+
+  CRC16 crc;
+  crc.setPolynome(0x1021);
+
+  crc.add(message+1, (uint16_t)(RX_PACKET_SIZE-4));
 
   messageComplete = false;
   
-  if(((unsigned int)crcString.toInt() % CRC_DIVIDER) == message[RX_PACKET_SIZE-3])
+  if(crc.getCRC() == (message[RX_PACKET_SIZE-3] << 8 | message[RX_PACKET_SIZE-2]))
   {
     desiredSteeringAngle  = message[0]; // 0 to 180
     desiredSpeed          = message[1]; // 0 to 180

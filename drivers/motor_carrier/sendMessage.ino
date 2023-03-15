@@ -2,7 +2,8 @@ void sendMessage()
 {
   byte sendMessageData[TX_PACKET_SIZE];
   byte stateValue = 0;
-  String crcString;
+  uint16_t rpm_uint16 = 0;
+  uint16_t usigned_heading = 0;
   
   // Gather information into writable format
   switch(State)
@@ -17,40 +18,30 @@ void sendMessage()
 
   sendMessageData[0] = 157;
   sendMessageData[1] = stateValue;
-  //sendMessageData[2] = (byte)floor(throttlePercentEffort);
-  //sendMessageData[3] = (byte)throttlePercentEffortDriver;
+  
+  rpm_uint16 = (uint16_t)(RPM1 * 100.0);
+  sendMessageData[2] = (rpm_uint16>>8)&0xFF; // High bits
+  sendMessageData[3] = rpm_uint16&0xFF; // Low bits
 
-  // Sensor data is in int16 format when read from sensor.
-  // Just transmit that and do the conversion on the receiving side.
+  rpm_uint16 = (uint16_t)(RPM2 * 100.0);
+  sendMessageData[4] = (rpm_uint16>>8)&0xFF; // High bits
+  sendMessageData[5] = rpm_uint16&0xFF; // Low bits
 
-  // Bit shift example for sending a int16
-  // writeData[i] = tempUInt16 & 0xFF;
-	// writeData[i+1] = (tempUInt16 >> 8) & 0xFF;
+  // Assemble into uint16 then cast as signed int16
+  sendMessageData[6] = (enu_heading>>8)&0xFF; // High bits
+  sendMessageData[7] = enu_heading&0xFF; // Low bits
 
- 
-  uint16_t checksum =  checksumCalculator(sendMessageData+1, TX_PACKET_SIZE-3);
+  CRC16 crc;
+  crc.setPolynome(0x1021);
+  crc.add(sendMessageData+1, (uint16_t)(TX_PACKET_SIZE-4));
+  uint16_t crc16 =  crc.getCRC();
 
-  // sendMessageData[4] = byte((unsigned int)crcString.toInt() % CRC_DIVIDER);
-  sendMessageData[5] = 147;
+  sendMessageData[8] = (crc16>>8)&0xFF; // High bits
+  sendMessageData[9] = crc16&0xFF; // Low bits
+  
+  sendMessageData[10] = 147;
   
   //Write data to serial
   Serial.write(sendMessageData, TX_PACKET_SIZE);
   
-}
-
-uint16_t checksumCalculator(uint8_t * data, uint16_t length)
-{
-  /*  Fletcher's Checksum algorithm. I have no idea what this is doing. 
-   *  https://www.tutorialspoint.com/cyclic-redundancy-check-crc-in-arduino
-   */
-   uint16_t curr_crc = 0x0000;
-   uint8_t sum1 = (uint8_t) curr_crc;
-   uint8_t sum2 = (uint8_t) (curr_crc >> 8);
-   int index;
-   for(index = 0; index < length; index = index+1)
-   {
-      sum1 = (sum1 + data[index]) % 255;
-      sum2 = (sum2 + sum1) % 255;
-   }
-   return (sum2 << 8) | sum1;
 }
