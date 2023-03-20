@@ -21,12 +21,6 @@
 #include <BNO055_support.h>
 #include "CRC16.h"
 
-// ---- Pin Definitions ----
-// PN - Adjust the pin mapping during testing
-#define YELLOW_LED_PIN  0
-#define GREEN_LED_PIN   0
-#define RED_LED_PIN     0
-
 // ---- State/LED State ----
 #define ACTIVE            1
 #define INACTIVE          2
@@ -36,13 +30,13 @@
 // ---- Serial Communication Parameters ----
 #define BAUDRATE        115200
 #define TX_PACKET_SIZE  11
-#define RX_PACKET_SIZE  6
-#define HEARTBEAT_TIMEOUT 3000 // Time in milliseconds that must pass before heart beat timeout is triggered
+#define RX_PACKET_SIZE  8
+#define HEARTBEAT_TIMEOUT 2000 // Time in milliseconds that must pass before heart beat timeout is triggered
 
 // ---Loop Timers----
 #define STATE_TIMER 50  // Time in milleseconds between each call of the state loop (~20Hz)
 #define SEND_TIMER 50   // Time in milleseconds between each call of sendMessage (~20Hz)
-#define PING_TIMER 100  // Time in millisecods between each controller.ping() (~20HZ)
+#define PING_TIMER 100  // Time in millisecods between each controller.ping() (~10HZ)
 
 //======================================================================================
 //===============================Global Variables=======================================
@@ -50,15 +44,19 @@
 int State = INACTIVE;         // start in the inactive State, ignition is off
 int desiredState = INACTIVE;  // stores the desired state based on state transition logic
 
-enum ledColor {
-  GREEN = GREEN_LED_PIN,
-  YELLOW = YELLOW_LED_PIN,
-  RED = RED_LED_PIN
+enum ledConfiguration {
+  OFF,
+  GREEN ,
+  YELLOW,
+  RED,
+  ALL
 };
 
 // ---- Received From ROS2 Driver ----
-byte desiredSteeringAngle = 0;             // 0-180 angle value from the ROS2 driver
-byte desiredSpeed = 0;                     // 0 if no reverse requested from ROS2 driver, 1 if requested from ROS2 driver
+byte desiredSteeringAngle = 0;    // 0-180 angle value from the ROS2 driver
+byte desiredSpeed = 0;            // 0-180. corresponds to different speed values for the ESC.
+byte ledColor = 1;                // The desired configuration of LEDs. 0=OFF, 1=GREEN, 2=YELLOW, 3=RED, 4=ALL
+bool ledBlinking = false;         // True if you want the specified ledColor to blink at a fixed rate.
 
 // ---- Encoder Variables ----
 float RPM1;
@@ -79,7 +77,7 @@ bool disableIO = false;
 // ---- Serial Variables ----
 byte messageStarted = false;
 byte messageComplete = false;  // whether the string is complete
-byte serialTimedOut = false;
+byte serialTimedOut = true;
 byte receivedMessage[RX_PACKET_SIZE-2];
 
 
@@ -88,6 +86,9 @@ byte receivedMessage[RX_PACKET_SIZE-2];
 //======================================================================================
 void setup() 
 {
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  
   Wire.begin(); // Required for communication with the BNO055 sensor.
 
   //Initialization of the BNO055
@@ -98,6 +99,10 @@ void setup()
   bno055_set_operation_mode(OPERATION_MODE_NDOF);
   delay(50);
   
+  controller.begin();
+  delay(50);
+  
+  controller.reboot();  
   // Initialize the serial
   Serial.begin(BAUDRATE);
 
@@ -112,7 +117,7 @@ void setup()
 void loop() 
 {
   static unsigned long lastStateTime = 0, lastSendTime = 0, lastReceivedMsgTime = 0, lastPingTime = 0;
-  static bool isValidMsg = false;
+  static bool isValidMsg = false, ledState = false;
   unsigned long currentTime = 0;
 
   controller.ping();
@@ -120,7 +125,7 @@ void loop()
   if(messageComplete)
   { 
     isValidMsg = parseReceivedMessage(receivedMessage);
-    if (isValidMsg){ lastReceivedMsgTime = millis(); }
+    if (isValidMsg){ lastReceivedMsgTime = millis(); serialTimedOut = false;}
   }
   
   currentTime = millis();
@@ -131,6 +136,8 @@ void loop()
 
   if(currentTime >= (lastStateTime + STATE_TIMER))
   {
+    // Have to manually call the "serialEvent" for Nano 33 IoT because apparently it is not used internally.
+    serialEvent();
     stateLoop();
     lastStateTime = currentTime;
   }
@@ -145,7 +152,10 @@ void loop()
   // Ping the controller. I have no idea if there is a desired rate.
   if(currentTime >= (lastPingTime + PING_TIMER))
   {
-    controller.ping();
+    if (ledState == true) { digitalWrite(LED_BUILTIN, LOW); ledState = false;}
+    else { digitalWrite(LED_BUILTIN, HIGH); ledState = true;}
     lastPingTime = currentTime;
   }
+  
+  controller.ping();
 }

@@ -6,15 +6,16 @@ bool parseReceivedMessage(byte* message)
 
   CRC16 crc;
   crc.setPolynome(0x1021);
+  crc.add(message, (uint16_t)(RX_PACKET_SIZE-4));
+  uint16_t crc_val = crc.getCRC();
 
-  crc.add(message+1, (uint16_t)(RX_PACKET_SIZE-4));
-
-  messageComplete = false;
-  
-  if(crc.getCRC() == (message[RX_PACKET_SIZE-3] << 8 | message[RX_PACKET_SIZE-2]))
+  messageComplete = false;    
+  if(crc_val == ((uint16_t)message[RX_PACKET_SIZE-4] << 8 | (uint16_t)message[RX_PACKET_SIZE-3]))
   {
-    desiredSteeringAngle  = message[0]; // 0 to 180
-    desiredSpeed          = message[1]; // 0 to 180
+    desiredSteeringAngle  = message[0];       // 0 to 180
+    desiredSpeed          = message[1];       // 0 to 180
+    ledColor              = message[2];       // 0, 1, 2, 3, 4
+    ledBlinking           = message[3] == 1;  // 0 or 1
 
     sendResponse(true);
     return true;
@@ -38,7 +39,7 @@ void serialEvent()
 { 
   static int counter = 0;
   
-  while (Serial.available()) 
+  while (Serial.available() > 0) 
   {
     // get the new byte:
     byte inByte = Serial.read();

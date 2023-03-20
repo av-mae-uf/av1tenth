@@ -69,7 +69,7 @@ class MotorCarrierDriver(Node):
 
         steering_angle_data = 90 + round(msg.drive.steering_angle * 2)
         speed_data = 90 + round(msg.drive.speed(90 / self.max_speed))
-        led_color = 1  # green is 1, yellow is 2 and red is 3 with 0 off
+        led_color = 3  # green is 1, yellow is 2 and red is 3 with 0 off
         blink = 0
         data_bytes = bytearray([steering_angle_data, speed_data, led_color, blink])
         crc16 = self.calculator.checksum(data_bytes)
@@ -93,8 +93,8 @@ class MotorCarrierDriver(Node):
                             )
                             is True
                         ):
-                            self.encoder1_rpm = ctypes.c_uint16((incoming_bytes[1] << 8) | incoming_bytes[2]).value
-                            self.encoder2_rpm = ctypes.c_uint16((incoming_bytes[3] << 8) | incoming_bytes[4]).value
+                            self.encoder1_rpm = ctypes.c_int16((incoming_bytes[1] << 8) | incoming_bytes[2]).value / 10.0
+                            self.encoder2_rpm = ctypes.c_int16((incoming_bytes[3] << 8) | incoming_bytes[4]).value / 10.0
                             self.heading_degrees = ctypes.c_uint16((incoming_bytes[5] << 8) | incoming_bytes[6]).value / 100.0
         except Exception as ex:
             print(ex)  # Most likely the main program has closed the device or ended so just move on
@@ -129,13 +129,14 @@ class MotorCarrierDriver(Node):
         self.flag = True if msg.buttons[8] == 1 else False
         if self.flag is False:
             return
+        # 18 < speed_data < 162
         speed_data = 90 + ((-msg.axes[5] + 1) / 2 - (-msg.axes[2] + 1) / 2) * 90
         steering_angle_data = 90 + msg.axes[3] * 90
-        led_color = 1
+        led_color = 3
         blink = 1
-        data_bytes = bytearray([steering_angle_data, speed_data, led_color, blink])
+        data_bytes = bytearray([int(steering_angle_data), int(speed_data), led_color, blink])
         crc16 = self.calculator.checksum(data_bytes)
-        bytes_out = bytearray([199, steering_angle_data, speed_data, led_color, blink, (crc16 >> 8) & 0xFF, crc16 & 0xFF, 200])
+        bytes_out = bytearray([199, int(steering_angle_data), int(speed_data), led_color, blink, (crc16 >> 8) & 0xFF, crc16 & 0xFF, 200])
         self.arduino.write(bytes_out)
 
 
