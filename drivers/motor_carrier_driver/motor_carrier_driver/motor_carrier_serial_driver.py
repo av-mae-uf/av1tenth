@@ -27,7 +27,7 @@ class MotorCarrierDriver(Node):
 
         self.timer1 = self.create_timer(timer_period_sec=1 / 30, callback=self.serial_read)
         self.timer2 = self.create_timer(timer_period_sec=1 / 20, callback=self.odometry_callback)
-        self.arduino = serial.Serial(port="/dev/ttyACM0", baudrate=115200)
+        self.arduino = serial.Serial(port="/dev/sensor/arduino", baudrate=115200)
         self.declare_parameter("Limiter", True)
 
         # Telling arduino the driver is active
@@ -132,12 +132,26 @@ class MotorCarrierDriver(Node):
 
         speed_data = 90 + ((-msg.axes[5] + 1) / 2 - (-msg.axes[2] + 1) / 2) * 72
         steering_angle_data = 90 - msg.axes[3] * 90
+
         if limiter is True:
             speed_data = min(speed_data, 120)
             speed_data = max(speed_data, 60)
 
-        led_color = 2
-        blink = 1
+        if msg.buttons[0] == 1:
+            led_color = 1
+        elif msg.buttons[3] == 1:
+            led_color = 2
+        elif msg.buttons[1] == 1:
+            led_color = 3
+        elif msg.buttons[2] == 1:
+            led_color = 4
+        else:
+            led_color = 0
+
+        if msg.buttons[7] == 1:
+            blink = 1
+        else:
+            blink = 0
 
         data_bytes = bytearray([int(steering_angle_data), int(speed_data), led_color, blink])
         crc16 = self.calculator.checksum(data_bytes)
