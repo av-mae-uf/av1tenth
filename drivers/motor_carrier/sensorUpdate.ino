@@ -11,7 +11,7 @@ void sensorUpdate()
   // bno055_read_quaternion_wxyz();
   bno055_read_euler_hrp(&eulerData);
   delay(1);
-  float transformed_heading = fmod(270.0 - float(eulerData.h)/16.00 + 360.0, 360.0);
+  float transformed_heading = fmod(90 - float(eulerData.h)/16.00 + 360.0, 360.0);
 
   enu_heading = (uint16_t)(transformed_heading * 100.0);
 

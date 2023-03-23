@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = "odometry_driver"
+package_name = "neo6m_driver"
 
 setup(
     name=package_name,
@@ -12,12 +12,12 @@ setup(
     ],
     install_requires=["setuptools"],
     zip_safe=True,
-    maintainer="Aditya Penumarti",
-    maintainer_email="apenumarti@ufl.edu",
-    description="Package for publishing IMU Data, which includes, angle off true north, angular acceleration and velocity, etc.",
+    maintainer="Carl Crane, Patrick Neal, Aditya Penumarti",
+    maintainer_email="carl.crane@gmail.com",
+    description="Package for publishing GPS data from a NEO-6M GPS unit. Can be used for navigation, designed for autonomous route point navigation",
     license="MIT",
     tests_require=["pytest"],
     entry_points={
-        "console_scripts": ["driver = odometry_driver.odometry_driver:main"],
+        "console_scripts": ["gps_driver = neo6m_driver.neo6m_driver_node:main"],
     },
 )
