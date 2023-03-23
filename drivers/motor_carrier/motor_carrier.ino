@@ -31,7 +31,7 @@
 #define BAUDRATE        115200
 #define TX_PACKET_SIZE  11
 #define RX_PACKET_SIZE  8
-#define HEARTBEAT_TIMEOUT 2000 // Time in milliseconds that must pass before heart beat timeout is triggered
+#define HEARTBEAT_TIMEOUT 500 // Time in milliseconds that must pass before heart beat timeout is triggered
 
 // ---Loop Timers----
 #define STATE_TIMER 50  // Time in milleseconds between each call of the state loop (~20Hz)

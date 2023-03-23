@@ -127,8 +127,6 @@ class MotorCarrierDriver(Node):
         msg.twist.twist.linear.x = (self.wheel_size / 2) * (left_wheel_rads + right_wheel_rads)
         msg.twist.twist.angular.z = (self.wheel_size / self.axle_width) * (right_wheel_rads - left_wheel_rads)
 
-        self.get_logger().info(f"Heading Angle (OdomCallback): {self.heading_degrees} degrees")
-
         self.publisher.publish(msg)
 
     def joy_control(self, msg=Joy):
