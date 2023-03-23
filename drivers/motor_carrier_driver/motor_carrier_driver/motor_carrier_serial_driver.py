@@ -54,11 +54,15 @@ class MotorCarrierDriver(Node):
         if self.flag is True:
             return
 
-        if math.isfinite(msg.drive.speed) or math.isfinite(msg.drive.steering_angle) is False:
+        if not math.isfinite(msg.drive.speed) or not math.isfinite(msg.drive.steering_angle):
             return
+        steering_angle = math.degrees(msg.drive.steering_angle)
 
-        steering_angle_data = 90 - msg.drive.steering_angle * 2
-        speed_data = 90 + msg.drive.speed(72 / self.max_speed)
+        steering_angle = min(steering_angle, 45)
+        steering_angle = max(steering_angle, -45)
+
+        steering_angle_data = 90 - steering_angle * 2
+        speed_data = 90 + msg.drive.speed * (72 / self.max_speed)
         if limiter is True:
             speed_data = min(speed_data, 120)
             speed_data = max(speed_data, 60)
@@ -93,7 +97,7 @@ class MotorCarrierDriver(Node):
             print(ex)  # Most likely the main program has closed the device or ended so just move on
             self.arduino.close()
 
-        self.get_logger().info(f"Heading Angle (SerReadCallback): {self.heading_degrees} degrees")
+        # self.get_logger().info(f"Heading Angle (SerReadCallback): {self.heading_degrees} degrees")
 
     def odometry_callback(self):
         """This function publishes the odometry data at 20Hz to a topic"""
