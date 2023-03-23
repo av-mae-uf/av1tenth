@@ -176,7 +176,7 @@ def main(args=None):
 
     except KeyboardInterrupt:
         data_bytes = bytearray([90, 90, 1, 0])
-        crc16 = self.calculator.checksum(data_bytes)
+        crc16 = motor_carrier.calculator.checksum(data_bytes)
         bytes_out = bytearray([199, data_bytes[0], data_bytes[1], data_bytes[2], data_bytes[3], (crc16 >> 8) & 0xFF, crc16 & 0xFF, 200])
         motor_carrier.arduino.write(bytes_out)
         motor_carrier.arduino.close()
