@@ -46,6 +46,7 @@ class MotorCarrierDriver(Node):
         self.axle_width = 184e-3  # m
         self.max_speed = 585 * (2 * math.pi * 60e-3) / 60
         self.flag = False
+        self.state = 32
 
     def ackermann_control(self, msg=AckermannDriveStamped):
         """This is the callback that subscribes to the AckermannDriveStamped message and writes it to
