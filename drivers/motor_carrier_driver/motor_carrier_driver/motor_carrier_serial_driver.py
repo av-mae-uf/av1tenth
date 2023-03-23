@@ -93,11 +93,17 @@ class MotorCarrierDriver(Node):
                             self.encoder1_rpm = ctypes.c_int16((incoming_bytes[1] << 8) | incoming_bytes[2]).value / 10.0
                             self.encoder2_rpm = ctypes.c_int16((incoming_bytes[3] << 8) | incoming_bytes[4]).value / 10.0
                             self.heading_degrees = ctypes.c_uint16((incoming_bytes[5] << 8) | incoming_bytes[6]).value / 100.0
+                            self.state = incoming_bytes[0]
         except Exception as ex:
             print(ex)  # Most likely the main program has closed the device or ended so just move on
             self.arduino.close()
 
-        # self.get_logger().info(f"Heading Angle (SerReadCallback): {self.heading_degrees} degrees")
+        self.arduino.reset_input_buffer()
+        if self.state == 32:
+            data_bytes = bytearray([90, 90, 2, 0])
+            crc16 = self.calculator.checksum(data_bytes)
+            bytes_out = bytearray([199, data_bytes[0], data_bytes[1], data_bytes[2], data_bytes[3], (crc16 >> 8) & 0xFF, crc16 & 0xFF, 200])
+            self.arduino.write(bytes_out)
 
     def odometry_callback(self):
         """This function publishes the odometry data at 20Hz to a topic"""
