@@ -140,11 +140,11 @@ class MotorCarrierDriver(Node):
             return
 
         speed_data = 90 + ((-msg.axes[5] + 1) / 2 - (-msg.axes[2] + 1) / 2) * 72
-        steering_angle_data = 90 - msg.axes[3] * 90
+        steering_angle_data = 90 - msg.axes[2] * 90
 
         if limiter is True:
-            speed_data = min(speed_data, 120)
-            speed_data = max(speed_data, 60)
+            speed_data = min(speed_data, 110)
+            speed_data = max(speed_data, 70)
 
         if msg.buttons[0] == 1:
             led_color = 1
