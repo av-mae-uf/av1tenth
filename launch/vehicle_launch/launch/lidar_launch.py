@@ -5,7 +5,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     ld = LaunchDescription()
-    
+
     lidar_node = Node(
         package="rplidar_ros",
         executable="rplidar_composition",
@@ -20,27 +20,21 @@ def generate_launch_description():
                 "angle_compensate": True,
             }
         ],
-    )    
+    )
     gps_node = Node(
         package="neo6m_driver",
-        executable="driver",
+        executable="gps_driver",
         output="screen",
     )
-    odometry_driver_node = Node(
-        package="odometry_driver",
-        executable="driver",
+    motor_carrier_driver_node = Node(
+        package="motor_carrier_driver",
+        executable="nano_driver",
         output="screen",
-    )
-    pololu_driver_node = Node(
-        package="pololu_driver",
-        executable="driver",
-        output="screen",
-        parameters=[{"limiter" : True}],
+        parameters=[{"Limiter" : True}],
     )
 
-    ld.add_action(pololu_driver_node)
+    ld.add_action(motor_carrier_driver_node)
     ld.add_action(gps_node)
-    ld.add_action(odometry_driver_node)
     ld.add_action(lidar_node)
-    
+
     return ld
