@@ -140,7 +140,7 @@ class MotorCarrierDriver(Node):
             return
 
         speed_data = 90 + ((-msg.axes[5] + 1) / 2 - (-msg.axes[2] + 1) / 2) * 72
-        steering_angle_data = 90 - msg.axes[2] * 90
+        steering_angle_data = 90 - msg.axes[0] * 90
 
         if limiter is True:
             speed_data = min(speed_data, 110)
