@@ -23,12 +23,12 @@ class MotorCarrierDriver(Node):
     def __init__(self):
         super().__init__("motor_carrier_driver")
 
-        self.subscription = self.create_subscription(msg_type=AckermannDriveStamped, topic="vehicle_command_ackermann", callback=self.ackermann_control, qos_profile=1, callback_group = MutuallyExclusiveCallbackGroup())
-        self.subscription2 = self.create_subscription(msg_type=Joy, topic="joy", callback=self.joy_control, qos_profile=1, callback_group = MutuallyExclusiveCallbackGroup())
+        self.subscription = self.create_subscription(msg_type=AckermannDriveStamped, topic="vehicle_command_ackermann", callback=self.ackermann_control, qos_profile=1, callback_group=MutuallyExclusiveCallbackGroup())
+        self.subscription2 = self.create_subscription(msg_type=Joy, topic="joy", callback=self.joy_control, qos_profile=1, callback_group=MutuallyExclusiveCallbackGroup())
         self.publisher = self.create_publisher(msg_type=Odometry, topic="odometry", qos_profile=1)
 
-        self.timer1 = self.create_timer(timer_period_sec=1 / 30, callback=self.serial_read, callback_group = MutuallyExclusiveCallbackGroup())
-        self.timer2 = self.create_timer(timer_period_sec=1 / 20, callback=self.odometry_callback, callback_group = ReentrantCallbackGroup())
+        self.timer1 = self.create_timer(timer_period_sec=1 / 30, callback=self.serial_read, callback_group=MutuallyExclusiveCallbackGroup())
+        self.timer2 = self.create_timer(timer_period_sec=1 / 20, callback=self.odometry_callback, callback_group=ReentrantCallbackGroup())
         self.arduino = serial.Serial(port="/dev/sensor/arduino", baudrate=115200)
         self.declare_parameter("Limiter", True)
 
@@ -127,7 +127,7 @@ class MotorCarrierDriver(Node):
         msg.pose.pose.orientation.y = c_x * s_y * c_z + s_x * c_y * s_z
         msg.pose.pose.orientation.z = c_x * c_y * s_z - s_x * s_y * c_z
 
-        msg.twist.twist.linear.x = (self.wheel_radius/ 2) * (left_wheel_rads + right_wheel_rads)
+        msg.twist.twist.linear.x = (self.wheel_radius / 2) * (left_wheel_rads + right_wheel_rads)
 
         self.publisher.publish(msg)
 
@@ -163,7 +163,7 @@ def main(args=None):
     executor = MultiThreadedExecutor()
     try:
         executor.add_node(motor_carrier)
-        executor.spin(motor_carrier)
+        executor.spin()
 
     except KeyboardInterrupt:
         data_bytes = bytearray([90, 90, 1, 0])
