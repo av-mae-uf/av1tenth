@@ -8,6 +8,8 @@ import serial
 from crc import Calculator, Crc16
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 from nav_msgs.msg import Odometry
 from ackermann_msgs.msg import AckermannDriveStamped
 from sensor_msgs.msg import Joy
@@ -21,12 +23,12 @@ class MotorCarrierDriver(Node):
     def __init__(self):
         super().__init__("motor_carrier_driver")
 
-        self.subscription = self.create_subscription(msg_type=AckermannDriveStamped, topic="vehicle_command_ackermann", callback=self.ackermann_control, qos_profile=1)
-        self.subscription2 = self.create_subscription(msg_type=Joy, topic="joy", callback=self.joy_control, qos_profile=1)
+        self.subscription = self.create_subscription(msg_type=AckermannDriveStamped, topic="vehicle_command_ackermann", callback=self.ackermann_control, qos_profile=1, callback_group = MutuallyExclusiveCallbackGroup())
+        self.subscription2 = self.create_subscription(msg_type=Joy, topic="joy", callback=self.joy_control, qos_profile=1, callback_group = MutuallyExclusiveCallbackGroup())
         self.publisher = self.create_publisher(msg_type=Odometry, topic="odometry", qos_profile=1)
 
-        self.timer1 = self.create_timer(timer_period_sec=1 / 30, callback=self.serial_read)
-        self.timer2 = self.create_timer(timer_period_sec=1 / 20, callback=self.odometry_callback)
+        self.timer1 = self.create_timer(timer_period_sec=1 / 30, callback=self.serial_read, callback_group = MutuallyExclusiveCallbackGroup())
+        self.timer2 = self.create_timer(timer_period_sec=1 / 20, callback=self.odometry_callback, callback_group = ReentrantCallbackGroup())
         self.arduino = serial.Serial(port="/dev/sensor/arduino", baudrate=115200)
         self.declare_parameter("Limiter", True)
 
@@ -42,7 +44,7 @@ class MotorCarrierDriver(Node):
         self.heading_degrees = 0.0
         self.encoder1_rpm = 0.0
         self.encoder2_rpm = 0.0
-        self.wheel_size = 120e-3 / 2  # m
+        self.wheel_radius = 120e-3 / 2  # m
         self.axle_width = 184e-3  # m
         self.max_speed = 585 * (2 * math.pi * 60e-3) / 60
         self.flag = False
@@ -125,8 +127,7 @@ class MotorCarrierDriver(Node):
         msg.pose.pose.orientation.y = c_x * s_y * c_z + s_x * c_y * s_z
         msg.pose.pose.orientation.z = c_x * c_y * s_z - s_x * s_y * c_z
 
-        msg.twist.twist.linear.x = (self.wheel_size / 2) * (left_wheel_rads + right_wheel_rads)
-        msg.twist.twist.angular.z = (self.wheel_size / self.axle_width) * (right_wheel_rads - left_wheel_rads)
+        msg.twist.twist.linear.x = (self.wheel_radius/ 2) * (left_wheel_rads + right_wheel_rads)
 
         self.publisher.publish(msg)
 
@@ -146,21 +147,8 @@ class MotorCarrierDriver(Node):
             speed_data = min(speed_data, 110)
             speed_data = max(speed_data, 70)
 
-        if msg.buttons[0] == 1:
-            led_color = 1
-        elif msg.buttons[3] == 1:
-            led_color = 2
-        elif msg.buttons[1] == 1:
-            led_color = 3
-        elif msg.buttons[2] == 1:
-            led_color = 4
-        else:
-            led_color = 0
-
-        if msg.buttons[7] == 1:
-            blink = 1
-        else:
-            blink = 0
+        blink = 1
+        led_color = 4
 
         data_bytes = bytearray([int(steering_angle_data), int(speed_data), led_color, blink])
         crc16 = self.calculator.checksum(data_bytes)
@@ -170,9 +158,12 @@ class MotorCarrierDriver(Node):
 
 def main(args=None):
     rclpy.init(args=args)
+
     motor_carrier = MotorCarrierDriver()
+    executor = MultiThreadedExecutor()
     try:
-        rclpy.spin(motor_carrier)
+        executor.add_node(motor_carrier)
+        executor.spin(motor_carrier)
 
     except KeyboardInterrupt:
         data_bytes = bytearray([90, 90, 1, 0])
