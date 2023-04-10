@@ -55,7 +55,7 @@ class NEO6MDriver(Node):
             ).flatten()
         ).tolist()
         
-        self.get_logger().info(f"hdop = {self.gps.hdop}")
+        # self.get_logger().info(f"hdop = {self.gps.hdop}")
         
         msg.latitude = self.gps.latitude
         msg.longitude = self.gps.longitude
