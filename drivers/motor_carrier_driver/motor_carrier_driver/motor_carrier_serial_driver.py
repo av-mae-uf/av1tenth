@@ -121,13 +121,15 @@ class MotorCarrierDriver(Node):
         left_wheel_rads = self.encoder1_rpm * ((2 * math.pi) / 60)
         right_wheel_rads = self.encoder2_rpm * ((2 * math.pi) / 60)
 
-        self.get_logger().info(f"Left Wheel: {self.encoder1_rpm}, \n Right Wheel: {self.encoder2_rpm}")
+        # self.get_logger().info(f"Left Wheel: {self.encoder1_rpm}, \n Right Wheel: {self.encoder2_rpm}")
 
         msg = Odometry()
         msg.pose.pose.orientation.w = c_x * c_y * c_z + s_x * s_y * s_z
         msg.pose.pose.orientation.x = s_x * c_y * c_z - c_x * s_y * s_z
         msg.pose.pose.orientation.y = c_x * s_y * c_z + s_x * c_y * s_z
         msg.pose.pose.orientation.z = c_x * c_y * s_z - s_x * s_y * c_z
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = "chassis"
 
         msg.twist.twist.linear.x = (self.wheel_radius / 2) * (left_wheel_rads + right_wheel_rads)
 
