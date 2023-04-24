@@ -67,8 +67,8 @@ class MotorCarrierDriver(Node):
         steering_angle_data = 90 - steering_angle * 2
         speed_data = 90 + msg.drive.speed * (72 / self.max_speed)
         if limiter is True:
-            speed_data = min(speed_data, 120)
-            speed_data = max(speed_data, 60)
+            speed_data = min(speed_data, 110)
+            speed_data = max(speed_data, 70)
         led_color = 3  # green is 1, yellow is 2 and red is 3 with 0 off
         blink = 0
         data_bytes = bytearray([int(steering_angle_data), int(speed_data), led_color, blink])
