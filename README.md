@@ -1,4 +1,4 @@
-# EML 4842: Autonomous Vehicles 1/10th Vehicle Drivers
+# EML 4842: Autonomous Vehicles - 1/10th Vehicle Drivers
 A repository for interfacing with the hardware onboard the AV 1/10th vehicle.
 
 ### Installation
