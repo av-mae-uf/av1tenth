@@ -1,8 +1,8 @@
 void sensorUpdate()
 {
   // Read Encoder values
-  RPM1 = (((encoder1.getRawCount())*(1000.0))/(50.0*80.0)*60.0);
-  RPM2 = (((encoder2.getRawCount())*(1000.0))/(50.0*80.0)*60.0);
+  RPM1 = (((encoder1.getRawCount())*(1000.0))/(50.0*40.0)*60.0);
+  RPM2 = (((encoder2.getRawCount())*(1000.0))/(50.0*40.0)*60.0);
 
   encoder1.resetCounter(0);
   encoder2.resetCounter(0);

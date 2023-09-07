@@ -134,6 +134,7 @@ void loop()
     serialTimedOut = true;
   }
 
+  currentTime = millis();
   if(currentTime >= (lastStateTime + STATE_TIMER))
   {
     // Have to manually call the "serialEvent" for Nano 33 IoT because apparently it is not used internally.
@@ -142,6 +143,7 @@ void loop()
     lastStateTime = currentTime;
   }
 
+  currentTime = millis();
   if(currentTime >= (lastSendTime + SEND_TIMER))
   {
     sensorUpdate();
