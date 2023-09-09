@@ -18,6 +18,6 @@ setup(
     license="MIT",
     tests_require=["pytest"],
     entry_points={
-        "console_scripts": ["gps_driver = neo6m_driver.neo6m_driver_node:main"],
+        "console_scripts": ["driver = neo6m_driver.neo6m_driver_node:main"],
     },
 )
