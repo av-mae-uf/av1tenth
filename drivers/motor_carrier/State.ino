@@ -4,12 +4,11 @@ void stateLoop(void)
    *  This is where all important actions are taken.
    */
 
-
   updateLEDs();
 
   updateState();
 
-  // ============================= PERFORM PROPER ACTIONS BASED ON STATE ===========================
+  //====================== PERFORM PROPER ACTIONS BASED ON STATE ======================
   switch (State)
   {
     case ACTIVE:

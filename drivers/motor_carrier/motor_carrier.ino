@@ -1,13 +1,9 @@
 
 /*  Written by: Patrick Neal
  *  Email: neap@ufl.edu
- *  Last Updated: 2/6/2023
+ *  Last Updated: 9/9/2023
  *  
  *  To Do:
- *    - Add LED functionality to code
- *    - update sendMessage for more data
- *    - Can test the motor control without any of the data feedback.
- *    - Add functionality to get low battery, create new state for "critically" low battery
  *    - System needs to be Calibrated. Need to add software to describe this.
  *    
  *  Notes:
@@ -24,8 +20,6 @@
 // ---- State/LED State ----
 #define ACTIVE            1
 #define INACTIVE          2
-#define LOW_BATTERY       3
-#define CRITICAL_BATTERY  4
 
 // ---- Serial Communication Parameters ----
 #define BAUDRATE        115200
@@ -134,6 +128,7 @@ void loop()
     serialTimedOut = true;
   }
 
+  currentTime = millis();
   if(currentTime >= (lastStateTime + STATE_TIMER))
   {
     // Have to manually call the "serialEvent" for Nano 33 IoT because apparently it is not used internally.
@@ -142,6 +137,7 @@ void loop()
     lastStateTime = currentTime;
   }
 
+  currentTime = millis();
   if(currentTime >= (lastSendTime + SEND_TIMER))
   {
     sensorUpdate();

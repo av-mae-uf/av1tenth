@@ -1,36 +1,50 @@
-# Date Created: March 2023
-# Description: ROS2 Driver for the Arduino Nano Motor Carrier board. Will be used to serial read IMU and encoder data, while writing servo
-# and drive motor commands.
-
 import ctypes
 import math
+
 import serial
 from crc import Calculator, Crc16
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
+
 from nav_msgs.msg import Odometry
 from ackermann_msgs.msg import AckermannDriveStamped
 from sensor_msgs.msg import Joy
 
 
 class MotorCarrierDriver(Node):
-    """This node communicates with the Arduino Nano and Nano Motor Carrier. It serially writes
-    and receives data. The written data is the drive motor and steering servo commands and the received commands
-    are the IMU data and Encoder values from each rear wheel."""
+    """
+        This node is a custom ROS 2 driver for the Arduino Nano Motor Carrier board. It will be used to exchange serial 
+        data to/from the board. 
+            From: IMU(Heading) and Encoder data(RPM). 
+            To: Servo and Drive Motor commands.
+    """
 
     def __init__(self):
         super().__init__("motor_carrier_driver")
 
-        self.subscription = self.create_subscription(msg_type=AckermannDriveStamped, topic="vehicle_command_ackermann", callback=self.ackermann_control, qos_profile=1, callback_group=MutuallyExclusiveCallbackGroup())
-        self.subscription2 = self.create_subscription(msg_type=Joy, topic="joy", callback=self.joy_control, qos_profile=1, callback_group=MutuallyExclusiveCallbackGroup())
-        self.publisher = self.create_publisher(msg_type=Odometry, topic="odometry", qos_profile=1)
-
-        self.timer1 = self.create_timer(timer_period_sec=1 / 30, callback=self.serial_read, callback_group=MutuallyExclusiveCallbackGroup())
-        self.timer2 = self.create_timer(timer_period_sec=1 / 20, callback=self.odometry_callback, callback_group=ReentrantCallbackGroup())
-        self.arduino = serial.Serial(port="/dev/sensor/arduino", baudrate=115200)
+        # ======= Parameters =======
         self.declare_parameter("Limiter", True)
+
+        # ======= Timers =======
+        self.serial_timer = self.create_timer(timer_period_sec=1 / 30, callback=self.serial_read_timer_callback)
+
+        self.odom_pub_timer = self.create_timer(timer_period_sec=1 / 20, callback=self.odometry_timer_callback, 
+                                                callback_group=MutuallyExclusiveCallbackGroup())
+
+        # ======= Subscriptions =======
+        self.sub_1 = self.create_subscription(msg_type=AckermannDriveStamped, topic="vehicle_command_ackermann", 
+                                                     callback=self.ackermann_callback, qos_profile=1)
+        
+        self.sub_2 = self.create_subscription(msg_type=Joy, topic="joy", callback=self.joy_callback, qos_profile=1)
+        
+        # ======= Publishers =======        
+        self.odom_pub = self.create_publisher(msg_type=Odometry, topic="odometry", qos_profile=1)
+
+        # ======= Serial =======
+        self.arduino = serial.Serial(port="/dev/sensor/arduino", baudrate=115200)
 
         # Telling arduino the driver is active
         self.calculator = Calculator(Crc16.CCITT)
@@ -39,8 +53,7 @@ class MotorCarrierDriver(Node):
         bytes_out = bytearray([199, data_bytes[0], data_bytes[1], data_bytes[2], data_bytes[3], (crc16 >> 8) & 0xFF, crc16 & 0xFF, 200])
         self.arduino.write(bytes_out)
 
-        # Init class variables
-
+        # ======= Variables =======
         self.heading_degrees = 0.0
         self.encoder1_rpm = 0.0
         self.encoder2_rpm = 0.0
@@ -50,15 +63,16 @@ class MotorCarrierDriver(Node):
         self.flag = False
         self.state = 32
 
-    def ackermann_control(self, msg=AckermannDriveStamped):
+    def ackermann_callback(self, msg: AckermannDriveStamped)-> None:
         """This is the callback that subscribes to the AckermannDriveStamped message and writes it to
         the serial port, along with setting the LED State"""
-        limiter = self.get_parameter("Limiter").get_parameter_value().bool_value
+
         if self.flag is True:
             return
 
         if not math.isfinite(msg.drive.speed) or not math.isfinite(msg.drive.steering_angle):
             return
+        
         steering_angle = math.degrees(msg.drive.steering_angle)
 
         steering_angle = min(steering_angle, 45)
@@ -66,19 +80,22 @@ class MotorCarrierDriver(Node):
 
         steering_angle_data = 90 - steering_angle * 2
         speed_data = 90 + msg.drive.speed * (72 / self.max_speed)
+
+        limiter = self.get_parameter("Limiter").get_parameter_value().bool_value
         if limiter is True:
             speed_data = min(speed_data, 110)
             speed_data = max(speed_data, 70)
-        led_color = 3  # green is 1, yellow is 2 and red is 3 with 0 off
-        blink = 0
+
+        led_color = 3  # 0: Off, 1: Green, 2: Yellow, 3: Red, 4: All
+        blink = 0 # 0: Off, 1: On
+
         data_bytes = bytearray([int(steering_angle_data), int(speed_data), led_color, blink])
         crc16 = self.calculator.checksum(data_bytes)
         bytes_out = bytearray([199, data_bytes[0], data_bytes[1], data_bytes[2], data_bytes[3], (crc16 >> 8) & 0xFF, crc16 & 0xFF, 200])
         self.arduino.write(bytes_out)
 
-    def serial_read(self):
-        """This callback reads the serial messages from the arduino at 30Hz to store data from the IMU and encoders."""
-
+    def serial_read_timer_callback(self)-> None:
+        """This callback reads the serial messages from the arduino at 30Hz to store data from the IMU and Encoders."""
         try:
             if self.arduino.in_waiting:
                 incoming_byte = self.arduino.read(1)
@@ -97,18 +114,21 @@ class MotorCarrierDriver(Node):
                             self.encoder2_rpm = ctypes.c_int16((incoming_bytes[3] << 8) | incoming_bytes[4]).value / 10.0
                             self.heading_degrees = ctypes.c_uint16((incoming_bytes[5] << 8) | incoming_bytes[6]).value / 100.0
                             self.state = incoming_bytes[0]
+
         except Exception as ex:
             print(ex)  # Most likely the main program has closed the device or ended so just move on
             self.arduino.close()
 
         self.arduino.reset_input_buffer()
-        if self.state == 32:
+
+        # Used to keep the Arduino state "Active" when neither Ackermann or Joy callbacks are triggering.
+        if self.state == 32: # "Inactive"
             data_bytes = bytearray([90, 90, 2, 0])
             crc16 = self.calculator.checksum(data_bytes)
             bytes_out = bytearray([199, data_bytes[0], data_bytes[1], data_bytes[2], data_bytes[3], (crc16 >> 8) & 0xFF, crc16 & 0xFF, 200])
             self.arduino.write(bytes_out)
 
-    def odometry_callback(self):
+    def odometry_timer_callback(self)-> None:
         """This function publishes the odometry data at 20Hz to a topic"""
 
         c_z = math.cos(math.radians(self.heading_degrees) / 2)
@@ -133,26 +153,30 @@ class MotorCarrierDriver(Node):
 
         msg.twist.twist.linear.x = (self.wheel_radius / 2) * (left_wheel_rads + right_wheel_rads)
 
-        self.publisher.publish(msg)
+        self.odom_pub.publish(msg)
 
-    def joy_control(self, msg=Joy):
-        """This Function overrides the serial write to write messages received from the Joy Node"""
+    def joy_callback(self, msg: Joy)-> None:
+        """ 
+            This Function overrides the AckermannDriveStamped callback's ability write serial messages 
+            when the "Xbox" button is pressed on a connected controller.
+        """
 
-        limiter = self.get_parameter("Limiter").get_parameter_value().bool_value
+        self.get_logger().warn(f'Joy node should be running with sticky buttons on', once=True)
+
         self.flag = True if msg.buttons[8] == 1 else False
-
         if self.flag is False:
             return
 
         speed_data = 90 + ((-msg.axes[5] + 1) / 2 - (-msg.axes[2] + 1) / 2) * 72
         steering_angle_data = 90 - msg.axes[0] * 90
 
+        limiter = self.get_parameter("Limiter").get_parameter_value().bool_value
         if limiter is True:
             speed_data = min(speed_data, 110)
             speed_data = max(speed_data, 70)
 
-        blink = 1
-        led_color = 4
+        blink = 1 # 0: Off, 1: On
+        led_color = 4 # 0: Off, 1: Green, 2: Yellow, 3: Red, 4: All
 
         data_bytes = bytearray([int(steering_angle_data), int(speed_data), led_color, blink])
         crc16 = self.calculator.checksum(data_bytes)
