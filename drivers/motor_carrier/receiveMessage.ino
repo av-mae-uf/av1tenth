@@ -1,5 +1,5 @@
 //======================================================================================
-//============================Serial Message Parser Function============================
+//=========================== Serial Message Parser Function ===========================
 //======================================================================================
 bool parseReceivedMessage(byte* message)
 {
@@ -26,12 +26,11 @@ bool parseReceivedMessage(byte* message)
     sendResponse(false);
     return false;
   }
-
 }
 
 
 //======================================================================================
-//=================================Serial Event Function================================
+//================================ Serial Event Function ===============================
 //======================================================================================
 // This whole function code cause asynchronous issues. Replacement message data while it is being read.
 // or not storing all the data if it does not all arrive in a timely manner.
@@ -44,11 +43,11 @@ void serialEvent()
     // get the new byte:
     byte inByte = Serial.read();
     
-    if(messageStarted) // start adding to received message
+    if(messageStarted) // Start adding to received message.
     {
-      if(messageComplete){ messageComplete = false; counter = 0; } // If we got another message before last was read. reset flags and overwrite.
+      if(messageComplete){ messageComplete = false; counter = 0; } // If we got another message before last was read, reset flags and overwrite.
       
-      if(inByte == 200 && counter == RX_PACKET_SIZE-2) // PN - Check the indexing 
+      if(inByte == 200 && counter == RX_PACKET_SIZE-2)
       { 
         messageComplete = true;
         messageStarted = false;
@@ -58,10 +57,9 @@ void serialEvent()
       {
         receivedMessage[counter] = (byte)inByte;
         counter++;
-
       }
     }
-    // Check if this is the beginning of a message
+    // Check if this is the beginning of a message.
     else if(inByte == 199)
     { 
       messageStarted = true;
@@ -71,7 +69,7 @@ void serialEvent()
 
 
 //======================================================================================
-//====================================Helper Functions==================================
+//=================================== Helper Functions =================================
 //======================================================================================
 void sendResponse(bool Correct)
 {

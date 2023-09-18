@@ -18,17 +18,16 @@ void stateLoop(void)
 
     case INACTIVE:
       // Defaults all controls to "zero" values.
-      setSteering(90);  // Set to forward
-      setRCSpeed(90);   // 0 throttle
+      setSteering(90);  // Turn wheels 'straight'.
+      setRCSpeed(90);   // 0 speed.
       break;
       
   } // End of switch case
-
 } // End of function
 
 
 //======================================================================================
-//==============================State Transition Function===============================
+//============================= State Transition Function ==============================
 //======================================================================================
 
 void updateState(void)
@@ -38,5 +37,4 @@ void updateState(void)
   else{ desiredState = ACTIVE; }
 
   State = desiredState;
-
-} // End of function
+}
