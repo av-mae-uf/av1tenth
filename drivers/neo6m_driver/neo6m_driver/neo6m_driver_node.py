@@ -44,7 +44,6 @@ class NEO6MDriver(Node):
 
     def pub_timer_callback(self)-> None:
         """ Publishing NavSatFix GPS Data """
-
         msg = NavSatFix()
         if self.gps.has_fix is False:
             msg.status.status = -1

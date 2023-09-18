@@ -46,8 +46,9 @@ class MotorCarrierDriver(Node):
         # ======= Serial =======
         self.arduino = serial.Serial(port="/dev/sensor/arduino", baudrate=115200)
 
-        # Telling arduino the driver is active
         self.calculator = Calculator(Crc16.CCITT)
+        
+        # Telling arduino the driver is active
         data_bytes = bytearray([90, 90, 2, 0])
         crc16 = self.calculator.checksum(data_bytes)
         bytes_out = bytearray([199, data_bytes[0], data_bytes[1], data_bytes[2], data_bytes[3], (crc16 >> 8) & 0xFF, crc16 & 0xFF, 200])
@@ -64,9 +65,10 @@ class MotorCarrierDriver(Node):
         self.state = 32
 
     def ackermann_callback(self, msg: AckermannDriveStamped)-> None:
-        """This is the callback that subscribes to the AckermannDriveStamped message and writes it to
-        the serial port, along with setting the LED State"""
-
+        """
+            This is the callback that subscribes to the AckermannDriveStamped message and writes it to
+            the serial port, along with setting the LED State
+        """
         if self.flag is True:
             return
 
@@ -130,7 +132,6 @@ class MotorCarrierDriver(Node):
 
     def odometry_timer_callback(self)-> None:
         """This function publishes the odometry data at 20Hz to a topic"""
-
         c_z = math.cos(math.radians(self.heading_degrees) / 2)
         s_z = math.sin(math.radians(self.heading_degrees) / 2)
         c_x = math.cos(0)
@@ -160,7 +161,6 @@ class MotorCarrierDriver(Node):
             This Function overrides the AckermannDriveStamped callback's ability write serial messages 
             when the "Xbox" button is pressed on a connected controller.
         """
-
         self.get_logger().warn(f'Joy node should be running with sticky buttons on', once=True)
 
         self.flag = True if msg.buttons[8] == 1 else False

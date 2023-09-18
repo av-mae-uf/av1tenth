@@ -1,18 +1,18 @@
 
 /*  Written by: Patrick Neal
  *  Email: neap@ufl.edu
- *  Last Updated: 9/9/2023
+ *  Last Updated: 9/18/2023
  *  
  *  To Do:
  *    - System needs to be Calibrated. Need to add software to describe this.
  *    
  *  Notes:
  *    * Allow the arduino some time after opening a serial connection. (like 2 seconds) 
- *    * Make sure to clear the TX buffer on the host computer when connecting to this sketch
+ *    * Make sure to clear the TX buffer on the host computer when connecting to this sketch.
  *
  */
 
-// Servos and Encoder objects are initialized in this header
+// Servos and Encoder objects are initialized in this header.
 #include <ArduinoMotorCarrier.h>
 #include <BNO055_support.h>
 #include "CRC16.h"
@@ -25,18 +25,18 @@
 #define BAUDRATE        115200
 #define TX_PACKET_SIZE  11
 #define RX_PACKET_SIZE  8
-#define HEARTBEAT_TIMEOUT 500 // Time in milliseconds that must pass before heart beat timeout is triggered
+#define HEARTBEAT_TIMEOUT 500 // Time in milliseconds that must pass before heart beat timeout is triggered.
 
 // ---Loop Timers----
-#define STATE_TIMER 50  // Time in milleseconds between each call of the state loop (~20Hz)
-#define SEND_TIMER 50   // Time in milleseconds between each call of sendMessage (~20Hz)
-#define PING_TIMER 100  // Time in millisecods between each controller.ping() (~10HZ)
+#define STATE_TIMER 50    // Time in milleseconds between each call of the state loop (~20Hz).
+#define SEND_TIMER 50     // Time in milleseconds between each call of sendMessage (~20Hz).
+#define BLINK_TIMER 100   // Time in milliseconds between toggling the builtin Arduino LED (~10HZ).
 
 //======================================================================================
 //===============================Global Variables=======================================
 //======================================================================================
-int State = INACTIVE;         // start in the inactive State, ignition is off
-int desiredState = INACTIVE;  // stores the desired state based on state transition logic
+int State = INACTIVE;         // start in the inactive State, ignition is off.
+int desiredState = INACTIVE;  // stores the desired state based on state transition logic.
 
 enum ledConfiguration {
   OFF,
@@ -47,9 +47,9 @@ enum ledConfiguration {
 };
 
 // ---- Received From ROS2 Driver ----
-byte desiredSteeringAngle = 0;    // 0-180 angle value from the ROS2 driver
-byte desiredSpeed = 0;            // 0-180. corresponds to different speed values for the ESC.
-byte ledColor = 1;                // The desired configuration of LEDs. 0=OFF, 1=GREEN, 2=YELLOW, 3=RED, 4=ALL
+byte desiredSteeringAngle = 0;    // 0-180 angle value from the ROS 2 driver.
+byte desiredSpeed = 0;            // 0-180. Corresponds to different speed values for the ESC.
+byte ledColor = 1;                // The desired configuration of LEDs. 0=OFF, 1=GREEN, 2=YELLOW, 3=RED, 4=ALL.
 bool ledBlinking = false;         // True if you want the specified ledColor to blink at a fixed rate.
 
 // ---- Encoder Variables ----
@@ -65,18 +65,15 @@ struct bno055_quaternion quatData;
 struct bno055_linear_accel accelData;
 uint16_t enu_heading;
 
-bool criticalBattery = false;
-bool disableIO = false;
-
 // ---- Serial Variables ----
 byte messageStarted = false;
-byte messageComplete = false;  // whether the string is complete
+byte messageComplete = false;  // whether the string is complete.
 byte serialTimedOut = true;
 byte receivedMessage[RX_PACKET_SIZE-2];
 
 
 //======================================================================================
-//========================================Setup=========================================
+//======================================= Setup ========================================
 //======================================================================================
 void setup() 
 {
@@ -86,7 +83,7 @@ void setup()
   Wire.begin(); // Required for communication with the BNO055 sensor.
 
   //Initialization of the BNO055
-  BNO_Init(&BNO); //Assigning the structure to hold information about the device
+  BNO_Init(&BNO); //Assigning the structure to hold information about the device.
   delay(50);
 
   //Configuration to NDoF mode - Make any configuration changes before this command!
@@ -96,21 +93,22 @@ void setup()
   controller.begin();
   delay(50);
   
-  controller.reboot();  
-  // Initialize the serial
+  // Reboot for some reason?
+  controller.reboot();
+  
   Serial.begin(BAUDRATE);
 
   encoder1.resetCounter(0);
-  encoder2.resetCounter(0);
+  encoder2.resetCounter(0);  
 }
 
 
 //======================================================================================
-//=========================================Loop=========================================
+//======================================== Loop ========================================
 //======================================================================================
 void loop() 
 {
-  static unsigned long lastStateTime = 0, lastSendTime = 0, lastReceivedMsgTime = 0, lastPingTime = 0;
+  static unsigned long lastStateTime = 0, lastSendTime = 0, lastReceivedMsgTime = 0, lastArduinoBlinkTime = 0;
   static bool isValidMsg = false, ledState = false;
   unsigned long currentTime = 0;
 
@@ -145,13 +143,14 @@ void loop()
     lastSendTime = currentTime;
   }
 
-  // Ping the controller. I have no idea if there is a desired rate.
-  if(currentTime >= (lastPingTime + PING_TIMER))
+  // Flash LED on the Arduino to show that it is running. currentTime is not polled again because precise timing of the blinking LED is not important.
+  if(currentTime >= (lastArduinoBlinkTime + BLINK_TIMER))
   {
     if (ledState == true) { digitalWrite(LED_BUILTIN, LOW); ledState = false;}
     else { digitalWrite(LED_BUILTIN, HIGH); ledState = true;}
-    lastPingTime = currentTime;
+    lastArduinoBlinkTime = currentTime;
   }
   
+  // Ping the controller. I have no idea if there is a desired rate.
   controller.ping();
 }

@@ -5,7 +5,7 @@ void sendMessage()
   uint16_t rpm_uint16 = 0;
   uint16_t usigned_heading = 0;
   
-  // Gather information into writable format
+  // Gather information into writable format.
   switch(State)
   {
     case ACTIVE:
@@ -43,5 +43,4 @@ void sendMessage()
   
   //Write data to serial
   Serial.write(sendMessageData, TX_PACKET_SIZE);
-  
 }
