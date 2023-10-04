@@ -171,9 +171,13 @@ class MotorCarrierDriver(Node):
         steering_angle_data = 90 - msg.axes[0] * 90
 
         limiter = self.get_parameter("Limiter").get_parameter_value().bool_value
+
         if limiter is True:
             speed_data = min(speed_data, 110)
             speed_data = max(speed_data, 70)
+        else:
+            speed_data = min(speed_data,180)
+            speed_data = max(speed_data,0)
 
         blink = 1 # 0: Off, 1: On
         led_color = 4 # 0: Off, 1: Green, 2: Yellow, 3: Red, 4: All
