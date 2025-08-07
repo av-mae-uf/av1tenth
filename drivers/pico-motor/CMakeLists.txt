@@ -23,6 +23,8 @@ set(CMAKE_EXE_LINKER_FLAGS "-mcpu=cortex-m0plus -mthumb")
 
 add_executable(pico-motor
     src/main.c
+    src/motor_pwm.c
+    src/crc16.c
 )
 pico_enable_stdio_usb(pico-motor 1)
 pico_enable_stdio_uart(pico-motor 0)
