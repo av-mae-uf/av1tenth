@@ -8,8 +8,10 @@
 #include "pico/stdlib.h"
 
 // Local includes
-#include "motor_pwm.h"
+#include "servo-pwm.h"
 #include "crc16.h"
+#include "serial.h"
+#include "motor-control.h"
 
 
 /* -------------------------------------------------------------------------- */
@@ -27,32 +29,22 @@
 int main () {
     stdio_init_all();
   
+    // TODO figure out how to use NeoPixel on RP2040-Tiny
     gpio_init(LED_PIN);
-        gpio_set_dir(LED_PIN, GPIO_OUT);
+    gpio_set_dir(LED_PIN, GPIO_OUT);
     gpio_put(LED_PIN, 1);
 
-    MOTOR_PWM_INIT(MOTOR_PIN);
+    SERVO_PWM_INIT(MOTOR_PIN);
     setAngle(STOP_VAL, MOTOR_PIN);
+
+    msg_t* message;
 
   while (1) {
 
-    // printf("Stop value\n");
-    // setAngle(90, MOTOR_PIN);
-    // sleep_ms(1000);
+    read_motor_message(message);
 
-    // printf("Forward value\n");
-    // setAngle(180, MOTOR_PIN);
-    // sleep_ms(1000);
-
-    // printf("Reverse value\n");
-    // setAngle(0, MOTOR_PIN);
-    // sleep_ms(1000);
-
-    for (int i = 0; i <= 180; i += 5) {
-        setAngle(i, MOTOR_PIN);
-        printf("Angle %d\n", i);
-        sleep_ms(500);
-    }
+    if (parse_received_message(message))
+        setAngle(message->speed, MOTOR_PIN);
 
     tight_loop_contents();
   }

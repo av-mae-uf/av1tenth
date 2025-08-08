@@ -1,4 +1,4 @@
-#include "motor_pwm.h"
+#include "servo-pwm.h"
 #include "hardware/pwm.h"
 #include "pico/stdlib.h"
 
@@ -7,7 +7,7 @@
 /* -------------------------------------------------------------------------- */
 
 
-void MOTOR_PWM_INIT(const int pin) {
+void SERVO_PWM_INIT(const int pin) {
     pwm_config cfg = pwm_get_default_config();
 
     // The ESC on the car needs a PWM signal. Most servos and ESCs

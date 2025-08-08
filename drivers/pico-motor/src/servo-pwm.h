@@ -1,5 +1,5 @@
-#ifndef MOTOR_PWM_H
-#define MOTOR_PWM_H
+#ifndef SERVO_PWM_H
+#define SERVO_PWM_H
 
 /* -------------------------------------------------------------------------- */
 /*                                   MACROS                                   */
@@ -18,7 +18,7 @@
  * 
  * @param pin (const int) Pin number (typically 1-30, check with what your 2040 board allows)
  */
-void MOTOR_PWM_INIT(const int pin);
+void SERVO_PWM_INIT(const int pin);
 
 /**
  * @brief Arduino's map function, "Re-maps a number from one range to another. That is, a value of in_min would get mapped to out_min, a value of in_max to out_max, values in-between to values in-between, etc."
@@ -40,4 +40,4 @@ long map(long x, long in_min, long in_max, long out_min, long out_max);
  */
 void setAngle(int angle, const int pin);
 
-#endif // MOTOR_PWM_H
+#endif // SERVO_PWM_H
