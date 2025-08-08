@@ -4,10 +4,8 @@
 /*                                  FUNCTIONS                                 */
 /* -------------------------------------------------------------------------- */
 
-uint16_t crc16_ccitt(const uint8_t* data, size_t length, const crc16_config* cfg) {
-    // TODO: Needs to be tested...
-
-    uint16_t crc = 0xFFFF;
+uint16_t crc16_xmodem(const uint8_t* data, size_t length, const crc16_config* cfg) {
+    uint16_t crc = 0x0000;
     uint16_t polynome = 0x1021;
 
     if (cfg != NULL) {
