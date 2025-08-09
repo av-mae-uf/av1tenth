@@ -8,19 +8,25 @@
 /*                                  FUNCTIONS                                 */
 /* -------------------------------------------------------------------------- */
 
-void read_motor_message(msg_t* message) {
+int read_motor_message(msg_t* message) {
     static int counter = 0;
 
     bool messageStarted = false;
     bool messageComplete = false;
     uint8_t receivedMessage[RX_PACKET_SIZE];
-
+    
     // TODO: see if there is a more effiencent way without the two bools
     // this is the original algorithm from the Arduino Motor Carrier
     int ch  = getchar_timeout_us(0);
+
+    if (ch == PICO_ERROR_TIMEOUT) {
+        return -1;
+    }
+
     while (ch != PICO_ERROR_TIMEOUT) {
         
         uint8_t inByte = (uint8_t) ch;
+        // putchar_raw(inByte);
 
         if (messageStarted) {
             if (messageComplete) {
@@ -48,22 +54,29 @@ void read_motor_message(msg_t* message) {
     message->stering_angle = receivedMessage[0];
     message->speed = receivedMessage[1];
     message->ledColor = receivedMessage[2];
-    message->ledColor = receivedMessage[3];
+    message->ledBlinking = receivedMessage[3];
 
     // TODO: check is this is the right
-    message->crc16.bytes.low = receivedMessage[4];
-    message->crc16.bytes.high = receivedMessage[5];
+    message->crc16.bytes.high = receivedMessage[4];
+    message->crc16.bytes.low = receivedMessage[5];
+
+
+    return 0;
 }
+
+
+uint16_t calculate_msg_crc(const msg_t* message) {
+    uint8_t buf[RX_PACKET_SIZE-4] = {message->stering_angle, message->speed, message->ledColor, message->ledBlinking};
+    return crc16_xmodem(buf, RX_PACKET_SIZE-4, NULL);
+}
+
 
 bool parse_received_message(const msg_t* message) {
     
     if (message == NULL)
         return false;
 
-    uint8_t buf[RX_PACKET_SIZE-4] = {message->stering_angle, message->speed, message->ledColor, message->ledBlinking};
-
-    uint16_t crc_val = crc16_ccitt(buf, RX_PACKET_SIZE-4, NULL);
-
+    uint16_t crc_val = calculate_msg_crc(message);
     if (crc_val == message->crc16.word) {
         return true;
     }

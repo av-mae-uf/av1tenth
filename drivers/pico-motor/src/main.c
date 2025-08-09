@@ -37,14 +37,18 @@ int main () {
     SERVO_PWM_INIT(MOTOR_PIN);
     setAngle(STOP_VAL, MOTOR_PIN);
 
-    msg_t* message;
-
   while (1) {
 
-    read_motor_message(message);
+    msg_t message;
+    if (read_motor_message(&message) == -1)
+        continue;
 
-    if (parse_received_message(message))
-        setAngle(message->speed, MOTOR_PIN);
+    if (parse_received_message(&message)) {
+        setAngle(message.speed, MOTOR_PIN);
+        send_response(true);
+    } else {
+        send_response(false);
+    }
 
     tight_loop_contents();
   }

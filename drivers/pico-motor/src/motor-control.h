@@ -55,8 +55,19 @@ typedef struct msg {
  * @brief Function that reads UART and stores to the passed msg_t pointer
  * 
  * @param message Pointer to a message struct
+ * @return Error Statues
+ * @retval 0 - New message
+ * @retval 1 - Timeout
  */
-void read_motor_message(msg_t* message);
+int read_motor_message(msg_t* message);
+
+/**
+ * @brief Calculates the msg's crc
+ * 
+ * @param message Pointer to the message
+ * @return uint16_t CRC value
+ */
+uint16_t calculate_msg_crc(const msg_t* message);
 
 /**
  * @brief Parses message to make sure CRC is correct meaning the information in the message is correct

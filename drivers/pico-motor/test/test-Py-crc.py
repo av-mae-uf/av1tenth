@@ -26,19 +26,24 @@ def main():
 
         buf = bytearray([90, 90, 2, 0])
         crc_val = calc.checksum(buf)
-        print(crc_val)
+        print(hex(crc_val))
 
-        print("My config of XModem")
-        print(f"Empty:       {hex(calc.checksum(b''))} (Expected: 0x0000)")
-        print(f'A:           {hex(calc.checksum(b"A"))} (Expected: 0x58E5)')
-        print(f"123456789:   {hex(calc.checksum(b'123456789'))} (Expected: 0x31C3)")
-        print(f"256 x 'A':   {hex(calc.checksum(b'A' * 256))} (Expected: 0xABE3)")
+        msg = bytearray([199, buf[0], buf[1], buf[2], buf[3], (crc_val >> 8) & 0xFF, crc_val & 0xFF, 200 ])
 
-        print("\nPremade Config of XModem")
-        print(f"Empty:       {hex(calc2.checksum(b''))} (Expected: 0x0000)")
-        print(f'A:           {hex(calc2.checksum(b"A"))} (Expected: 0x58E5)')
-        print(f"123456789:   {hex(calc2.checksum(b'123456789'))} (Expected: 0x31C3)")
-        print(f"256 x 'A':   {hex(calc2.checksum(b'A' * 256))} (Expected: 0xABE3)")
+        print(' '.join(f'{byte:02X}' for byte in msg))
+        # C7 5A 5A 02 00 E2 FD C8
+
+        # print("My config of XModem")
+        # print(f"Empty:       {hex(calc.checksum(b''))} (Expected: 0x0000)")
+        # print(f'A:           {hex(calc.checksum(b"A"))} (Expected: 0x58E5)')
+        # print(f"123456789:   {hex(calc.checksum(b'123456789'))} (Expected: 0x31C3)")
+        # print(f"256 x 'A':   {hex(calc.checksum(b'A' * 256))} (Expected: 0xABE3)")
+
+        # print("\nPremade Config of XModem")
+        # print(f"Empty:       {hex(calc2.checksum(b''))} (Expected: 0x0000)")
+        # print(f'A:           {hex(calc2.checksum(b"A"))} (Expected: 0x58E5)')
+        # print(f"123456789:   {hex(calc2.checksum(b'123456789'))} (Expected: 0x31C3)")
+        # print(f"256 x 'A':   {hex(calc2.checksum(b'A' * 256))} (Expected: 0xABE3)")
 
         pass
     except Exception as e:
