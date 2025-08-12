@@ -18,7 +18,6 @@ int read_motor_message(msg_t* message) {
     // TODO: see if there is a more effiencent way without the two bools
     // this is the original algorithm from the Arduino Motor Carrier
     int ch  = getchar_timeout_us(0);
-
     if (ch == PICO_ERROR_TIMEOUT) {
         return -1;
     }
@@ -44,7 +43,7 @@ int read_motor_message(msg_t* message) {
             
         } else if (inByte == START_BYTE) {
             messageStarted = true;
-            // counter = 0;
+            counter = 0;
         }
 
         ch = getchar_timeout_us(0); 
@@ -56,23 +55,21 @@ int read_motor_message(msg_t* message) {
     message->ledColor = receivedMessage[2];
     message->ledBlinking = receivedMessage[3];
 
-    // TODO: check is this is the right
     message->crc16.bytes.high = receivedMessage[4];
     message->crc16.bytes.low = receivedMessage[5];
-
 
     return 0;
 }
 
 
 uint16_t calculate_msg_crc(const msg_t* message) {
+    // TODO: check if there is a more effective way to convert message into buff
     uint8_t buf[RX_PACKET_SIZE-4] = {message->stering_angle, message->speed, message->ledColor, message->ledBlinking};
     return crc16_xmodem(buf, RX_PACKET_SIZE-4, NULL);
 }
 
 
 bool parse_received_message(const msg_t* message) {
-    
     if (message == NULL)
         return false;
 

@@ -38,6 +38,15 @@ typedef struct msg {
 } msg_t;
 
 /* -------------------------------------------------------------------------- */
+/*                                    ENUMS                                   */
+/* -------------------------------------------------------------------------- */
+
+typedef enum msg_status {
+    MSG_SUCCESS = 0,
+    MSG_TIMEOUT = -1
+} msg_status_t;
+
+/* -------------------------------------------------------------------------- */
 /*                                   EXTERNS                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -57,24 +66,23 @@ typedef struct msg {
  * @param message Pointer to a message struct
  * @return Error Statues
  * @retval 0 - New message
- * @retval 1 - Timeout
+ * @retval -1 - Timeout
  */
 int read_motor_message(msg_t* message);
 
 /**
  * @brief Calculates the msg's crc
  * 
- * @param message Pointer to the message
- * @return uint16_t CRC value
+ * @param message (const msg_t *) Pointer to the message 
+ * @return `uint16_t` CRC value of passed message
  */
 uint16_t calculate_msg_crc(const msg_t* message);
 
 /**
  * @brief Parses message to make sure CRC is correct meaning the information in the message is correct
  * 
- * @param message Pointer to the received message buffer
- * @return `true`: Content in buffer is correct and can be used |
- * @return `false`: Content in buffer is incorrect and should not be used
+ * @param message (const msg_t *) Pointer to the received message buffer
+ * @return `bool` weither or not the passed message is correct and can be uses
  */
 bool parse_received_message(const msg_t* message);
 
