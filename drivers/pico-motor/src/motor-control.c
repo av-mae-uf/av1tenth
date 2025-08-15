@@ -49,12 +49,10 @@ int read_motor_message(msg_t* message) {
         ch = getchar_timeout_us(0); 
     }
 
-    // TODO make this better if possible
     message->stering_angle = receivedMessage[0];
     message->speed = receivedMessage[1];
     message->ledColor = receivedMessage[2];
     message->ledBlinking = receivedMessage[3];
-
     message->crc16.bytes.high = receivedMessage[4];
     message->crc16.bytes.low = receivedMessage[5];
 
@@ -65,7 +63,7 @@ int read_motor_message(msg_t* message) {
 uint16_t calculate_msg_crc(const msg_t* message) {
     // TODO: check if there is a more effective way to convert message into buff
     uint8_t buf[RX_PACKET_SIZE-4] = {message->stering_angle, message->speed, message->ledColor, message->ledBlinking};
-    return crc16_xmodem(buf, RX_PACKET_SIZE-4, NULL);
+    return crc16(buf, RX_PACKET_SIZE-4, NULL);
 }
 
 
