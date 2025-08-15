@@ -2,6 +2,8 @@ import serial
 from crc import Calculator, Crc16
 import math
 
+import glob
+
 # ---------------------------------------------------------------------------- #
 #                                  PARAMETERS                                  #
 # ---------------------------------------------------------------------------- #
@@ -10,7 +12,13 @@ MAX_SPEED = 585 * (2 * math.pi * 60e-3) / 60
 
 isSpeedLimited = False
 
-PORT = '/dev/ttyACM0'
+# Dynamically find the Pico with /serial/ sub-folder
+# It is typically `/dev/ttyACM*`, I think Arduino also uses the same 
+matches = glob.glob('/dev/serial/by-id/*Pico*')
+if not matches:
+    raise RuntimeError("No Pico found")
+
+PORT = matches[0]
 BAUD = 115200
 TIMEOUT_S = 0.001
 
@@ -64,7 +72,7 @@ def main():
                 print("Exiting program")
                 break
 
-            while (speed < -6 or speed > 6):
+            while (abs(speed) > 6):
                 speed = float(input("Error, invalid input! Please type new speed [-6, 6] or `37` to end the program: "))
 
             speed_data = convert_speed_to_angle(speed)
