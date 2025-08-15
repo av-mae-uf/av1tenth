@@ -2,7 +2,7 @@ import ctypes
 import math
 
 import serial
-from crc import Calculator, Crc16
+from crc import Calculator, Crc16, Configuration
 
 import rclpy
 from rclpy.node import Node
@@ -13,6 +13,13 @@ from nav_msgs.msg import Odometry
 from ackermann_msgs.msg import AckermannDriveStamped
 from sensor_msgs.msg import Joy
 
+import glob
+
+
+ARDUINO_PORT = "/dev/sensor/arduino"
+PICO_PORT = '/dev/serial/by-id/*Pico*'
+BAUD = 115200
+TIMEOUT_S = 0.001
 
 class MotorCarrierDriver(Node):
     """
@@ -44,15 +51,36 @@ class MotorCarrierDriver(Node):
         self.odom_pub = self.create_publisher(msg_type=Odometry, topic="odometry", qos_profile=1)
 
         # ======= Serial =======
-        self.arduino = serial.Serial(port="/dev/sensor/arduino", baudrate=115200)
+        self.arduino = serial.Serial(port=ARDUINO_PORT, baudrate=BAUD)
 
-        self.calculator = Calculator(Crc16.CCITT)
-        
+        matches = glob.glob(PICO_PORT)
+        if not matches:
+            raise RuntimeError("No Pico found")
+        self.pico = serial.Serial(port=matches[0], baudrate=BAUD, timeout=TIMEOUT_S)
+
+        # ======= CRC =======
+        config = Configuration(
+            width=16,
+            polynomial=0x1021,
+            init_value=0x0000,
+            final_xor_value=0x0000,
+            reverse_input=False,
+            reverse_output=False
+        )
+
+        # In the CRC python library, CCITT was renamed to be XMODEM in CRC version 7. 
+        # I believe the car right now (Aug 2025) uses version 6. 
+        # To make sure this works for both versions, I made a configuration that is XMODEM. 
+        # This should be backwards and forwards compatible.
+        # self.calculator = Calculator(Crc16.CCITT) 
+        self.calculator = Calculator(config)
+
         # Telling arduino the driver is active
         data_bytes = bytearray([90, 90, 2, 0])
         crc16 = self.calculator.checksum(data_bytes)
         bytes_out = bytearray([199, data_bytes[0], data_bytes[1], data_bytes[2], data_bytes[3], (crc16 >> 8) & 0xFF, crc16 & 0xFF, 200])
         self.arduino.write(bytes_out)
+        self.pico.write(bytes_out)
 
         # ======= Variables =======
         self.heading_degrees = 0.0
@@ -95,6 +123,7 @@ class MotorCarrierDriver(Node):
         crc16 = self.calculator.checksum(data_bytes)
         bytes_out = bytearray([199, data_bytes[0], data_bytes[1], data_bytes[2], data_bytes[3], (crc16 >> 8) & 0xFF, crc16 & 0xFF, 200])
         self.arduino.write(bytes_out)
+        self.pico.write(bytes_out)
 
     def serial_read_timer_callback(self)-> None:
         """This callback reads the serial messages from the arduino at 30Hz to store data from the IMU and Encoders."""
@@ -116,10 +145,13 @@ class MotorCarrierDriver(Node):
                             self.encoder2_rpm = ctypes.c_int16((incoming_bytes[3] << 8) | incoming_bytes[4]).value / 10.0
                             self.heading_degrees = ctypes.c_uint16((incoming_bytes[5] << 8) | incoming_bytes[6]).value / 100.0
                             self.state = incoming_bytes[0]
+            if self.pico.in_waiting:
+                self.pico.read_until()
 
         except Exception as ex:
             print(ex)  # Most likely the main program has closed the device or ended so just move on
             self.arduino.close()
+            self.pico.close()
 
         self.arduino.reset_input_buffer()
 
@@ -129,6 +161,7 @@ class MotorCarrierDriver(Node):
             crc16 = self.calculator.checksum(data_bytes)
             bytes_out = bytearray([199, data_bytes[0], data_bytes[1], data_bytes[2], data_bytes[3], (crc16 >> 8) & 0xFF, crc16 & 0xFF, 200])
             self.arduino.write(bytes_out)
+            self.pico.write(bytes_out)
 
     def odometry_timer_callback(self)-> None:
         """This function publishes the odometry data at 20Hz to a topic"""
@@ -186,6 +219,7 @@ class MotorCarrierDriver(Node):
         crc16 = self.calculator.checksum(data_bytes)
         bytes_out = bytearray([199, data_bytes[0], data_bytes[1], data_bytes[2], data_bytes[3], (crc16 >> 8) & 0xFF, crc16 & 0xFF, 200])
         self.arduino.write(bytes_out)
+        self.pico.write(bytes_out)
 
 
 def main(args=None):
@@ -203,6 +237,8 @@ def main(args=None):
         bytes_out = bytearray([199, data_bytes[0], data_bytes[1], data_bytes[2], data_bytes[3], (crc16 >> 8) & 0xFF, crc16 & 0xFF, 200])
         motor_carrier.arduino.write(bytes_out)
         motor_carrier.arduino.close()
+        motor_carrier.pico.write(bytes_out)
+        motor_carrier.pico.close()
 
     finally:
         motor_carrier.destroy_node()
