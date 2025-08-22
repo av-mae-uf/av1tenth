@@ -14,13 +14,13 @@ isSpeedLimited = False
 
 # Dynamically find the Pico with /serial/ sub-folder
 # It is typically `/dev/ttyACM*`, I think Arduino also uses the same 
-matches = glob.glob('/dev/serial/by-id/*Pico*')
-if not matches:
-    raise RuntimeError("No Pico found")
-
-PORT = matches[0]
+PORT = '/dev/serial/by-id/*Pico*'
 BAUD = 115200
 TIMEOUT_S = 0.001
+
+# ---------------------------------------------------------------------------- #
+#                                   FUNCTIONS                                  #
+# ---------------------------------------------------------------------------- #
 
 def convert_speed_to_angle(speed: float) -> int:
     '''
@@ -34,7 +34,6 @@ def convert_speed_to_angle(speed: float) -> int:
     # this is the equation to convert speed to an angle for the Pico/Arduino done by Aditya and Patrick
     # I believe it uses the circumference of the wheel?
     angle = 90 + speed * (72 / MAX_SPEED)
-    angle = int(angle)
 
     if isSpeedLimited:
         angle = min(angle, 110)
@@ -43,7 +42,15 @@ def convert_speed_to_angle(speed: float) -> int:
         angle = min(angle,180)
         angle = max(angle,0)
 
-    return angle
+    return int(angle)
+
+
+def map_range(x, in_min, in_max, out_min, out_max):
+  '''
+  Arduino map function. Maps a value from one range to another.
+  '''
+  return (x - in_min) * (out_max - out_min) // (in_max - in_min) + out_min
+
 
 def get_msg(angle: int) -> bytearray:
     ''' 
@@ -56,14 +63,25 @@ def get_msg(angle: int) -> bytearray:
 
     return msg
 
+
 # ---------------------------------------------------------------------------- #
 #                                     MAIN                                     #
 # ---------------------------------------------------------------------------- #
 
 def main():
+    global PORT
+
     try: 
+        matches = glob.glob(PORT)
+        if not matches:
+            raise RuntimeError("No Pico found")
+        PORT = matches[0]
+
         pico = serial.Serial(port=PORT, baudrate= BAUD, timeout=TIMEOUT_S)
+        # pico = serial.Serial(port="/dev/serial/by-id/usb-Arduino_LLC_Arduino_NANO_33_IoT_C0FFB82950544159372E3120FF171F29-if00", baudrate=BAUD, timeout=TIMEOUT_S)
         print("Connected to Pico!")
+        pico.write(get_msg(90))
+        pico.read_until()
         
         while (True):
             speed = float(input("Type new speed (m/s) [-6, 6] or `37` to end the program: "))
@@ -95,9 +113,12 @@ def main():
         pass
     except KeyboardInterrupt:
         print("\nKeyboard Interrupt has occured... Exiting now!")
+    except EOFError:
+        print("\nKeyboard Interrupt has occured... Exiting now!")
     # except Exception as e:
     #     print(f"Exception {e} has occured...")
     finally:
+        pico.write(get_msg(90))
         pico.close()
 
 

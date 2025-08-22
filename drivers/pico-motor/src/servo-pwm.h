@@ -7,7 +7,15 @@
 
 #define STOP_VAL 1500 // us, pulse width for neutral position of motor
 #define MAX_FWR_VAL 2000 // us, assumed max forward speed pulse width
-#define MAX_REV_VAL 1000 // us, assumed max reverse speed pulse width
+#define MAX_REV_VAL 1000 // us, assumed max reverse speed pulse 
+
+// To get similar values as the Arduino, we need a different range
+#define ARDUINO_LOW 595
+#define ARDUINO_HIGH 2425
+
+#define STOP_DEG 90
+#define MAX_FWR_DEG 180
+#define MAX_REV_DEG 0
 
 /* -------------------------------------------------------------------------- */
 /*                                 PROTOTYPES                                 */

@@ -36,11 +36,11 @@ long map(long x, long in_min, long in_max, long out_min, long out_max) {
 
 
 void setAngle(int angle, const int pin) {
-    if (angle > 180)
-        angle = 180;
-    if (angle < 0)
-        angle = 0;
+    if (angle > MAX_FWR_DEG)
+        angle = MAX_FWR_DEG;
+    if (angle < MAX_REV_DEG)
+        angle = MAX_REV_DEG;
 
-    int pulse = map(angle, 0, 180, MAX_REV_VAL, MAX_FWR_VAL);
+    int pulse = map(angle, MAX_REV_DEG, MAX_FWR_DEG, ARDUINO_LOW, ARDUINO_HIGH);
     pwm_set_gpio_level(pin, pulse);
 }

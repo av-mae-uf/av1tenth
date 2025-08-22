@@ -19,7 +19,7 @@
 /* -------------------------------------------------------------------------- */
 
 /** 
- * @brief Struct that stores the received message (start byte 199) 
+ * @brief Struct that stores the received motor controller message
  */
 typedef struct msg {
     uint8_t stering_angle;  /** < 0 to 180 degs */
@@ -33,7 +33,7 @@ typedef struct msg {
             uint8_t high;
         } bytes;
         uint16_t word;
-    } crc16;
+    } crc16;                /** < union that stores crc, `.word` (uint16) and `.bytes.low/high` (uint8) */
 
 } msg_t;
 

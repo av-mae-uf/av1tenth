@@ -35,7 +35,7 @@ int main () {
     gpio_put(LED_PIN, 1);
 
     SERVO_PWM_INIT(MOTOR_PIN);
-    setAngle(STOP_VAL, MOTOR_PIN);
+    setAngle(STOP_DEG, MOTOR_PIN);
 
     msg_t message;
 

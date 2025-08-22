@@ -5,3 +5,5 @@ build/*
 # keep compiled work
 !build/*.uf2
 !build/compile_commands.json
+
+__pycache__/
