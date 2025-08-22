@@ -17,7 +17,7 @@ import glob
 
 
 ARDUINO_PORT = "/dev/sensor/arduino"
-PICO_PORT = '/dev/serial/by-id/*Pico*'
+PICO_PORT = '/dev/sensor/pico'
 BAUD = 115200
 TIMEOUT_S = 0.001
 
@@ -53,10 +53,7 @@ class MotorCarrierDriver(Node):
         # ======= Serial =======
         self.arduino = serial.Serial(port=ARDUINO_PORT, baudrate=BAUD)
 
-        matches = glob.glob(PICO_PORT)
-        if not matches:
-            raise RuntimeError("No Pico found")
-        self.pico = serial.Serial(port=matches[0], baudrate=BAUD, timeout=TIMEOUT_S)
+        self.pico = serial.Serial(port=PICO_PORT, baudrate=BAUD, timeout=TIMEOUT_S)
 
         # ======= CRC =======
         config = Configuration(
