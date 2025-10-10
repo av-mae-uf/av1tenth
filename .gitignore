@@ -3,3 +3,5 @@ log/
 install/
 .vscode/
 .DS_Store
+
+!build/*.uf2
