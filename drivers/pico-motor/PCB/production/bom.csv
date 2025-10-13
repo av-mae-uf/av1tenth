@@ -1,0 +1,7 @@
+﻿Designator,Footprint,Quantity,Value,LCSC Part #
+"C1, C2",0603,2,100nF,
+"J1, J2",PinHeader_1x03_P2.54mm_Vertical,2,Conn_01x03,
+J3,PinHeader_2x04_P2.54mm_Vertical,1,Conn_02x04_Odd_Even,
+J4,TerminalBlock_Xinya_XY308-2.54-2P_1x02_P2.54mm_Horizontal,1,Screw_Terminal_01x02,
+"JP1, JP2, JP3, JP4, JP5, JP6",SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm,6,Jumper_2_Open,
+U1,MODULE_RP2040-ZERO,1,RP2040-ZERO,
